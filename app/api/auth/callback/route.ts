@@ -1,28 +1,28 @@
-// app/api/auth/callback/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+
+type TikTokTokenResponse = {
+  data?: { refresh_token?: string; access_token?: string };
+  error?: { message?: string };
+  message?: string;
+};
 
 const TOKEN_URL = "https://open-api.tiktokglobalplatform.com/v2/oauth/token/";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const oauthError = url.searchParams.get("error");
   const returnedState = url.searchParams.get("state");
 
-  // Récup cookies (Next 14/Node runtime)
-  const anyReq = req as any;
-  const cookies = anyReq?.cookies?.get ? anyReq.cookies : undefined;
-  const expectedState = cookies?.get?.("tt_state")?.value;
-  const pkce = cookies?.get?.("tt_pkce")?.value;
+  const expectedState = req.cookies.get("tt_state")?.value;
+  const pkce = req.cookies.get("tt_pkce")?.value;
 
   if (oauthError) return NextResponse.redirect(addMsg("/", `oauth_error:${oauthError}`));
-  if (!code)     return NextResponse.redirect(addMsg("/", "no_code"));
+  if (!code) return NextResponse.redirect(addMsg("/", "no_code"));
   if (expectedState && returnedState && expectedState !== returnedState) {
     return NextResponse.redirect(addMsg("/", "oauth_state_mismatch"));
   }
-  if (!pkce) {
-    return NextResponse.redirect(addMsg("/", "missing_pkce_verifier"));
-  }
+  if (!pkce) return NextResponse.redirect(addMsg("/", "missing_pkce_verifier"));
 
   const body = new URLSearchParams({
     client_key: process.env.TIKTOK_CLIENT_KEY!,
@@ -30,10 +30,10 @@ export async function GET(req: Request) {
     code,
     grant_type: "authorization_code",
     redirect_uri: process.env.TIKTOK_REDIRECT_URI!,
-    code_verifier: pkce, // ⬅️ important
+    code_verifier: pkce,
   });
 
-  let data: any;
+  let data: TikTokTokenResponse;
   try {
     const r = await fetch(TOKEN_URL, {
       method: "POST",
@@ -41,8 +41,7 @@ export async function GET(req: Request) {
       body,
       cache: "no-store",
     });
-    data = await r.json();
-    console.log("TT REFRESH =", data?.data?.refresh_token);
+    data = (await r.json()) as TikTokTokenResponse;
     if (!r.ok || !data?.data?.refresh_token) {
       const msg = data?.error?.message || data?.message || "oauth_exchange_failed";
       return NextResponse.redirect(addMsg("/", msg));
@@ -51,19 +50,30 @@ export async function GET(req: Request) {
     return NextResponse.redirect(addMsg("/", "oauth_network_error"));
   }
 
-  const refreshToken = data.data.refresh_token as string;
-  const accessToken  = data.data.access_token as string | undefined;
+  console.log("TT REFRESH =", data.data?.refresh_token);
+
+  const refreshToken = data.data?.refresh_token as string;
+  const accessToken = data.data?.access_token as string | undefined;
   const isProd = process.env.NODE_ENV === "production";
   const res = NextResponse.redirect(addMsg("/", "connected"));
 
-  // tokens
-  res.cookies.set("tt_refresh", refreshToken, { httpOnly: true, secure: isProd, sameSite: "lax", path: "/", maxAge: 60*60*24*30 });
+  res.cookies.set("tt_refresh", refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
   if (accessToken) {
-    res.cookies.set("tt_access", accessToken, { httpOnly: true, secure: isProd, sameSite: "lax", path: "/", maxAge: 60*60*2 });
+    res.cookies.set("tt_access", accessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 2,
+    });
   }
-
-  // cleanup PKCE/state
-  res.cookies.set("tt_pkce",  "", { path: "/", maxAge: 0 });
+  res.cookies.set("tt_pkce", "", { path: "/", maxAge: 0 });
   res.cookies.set("tt_state", "", { path: "/", maxAge: 0 });
 
   return res;

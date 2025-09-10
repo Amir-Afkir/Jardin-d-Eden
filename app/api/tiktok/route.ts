@@ -1,10 +1,13 @@
 // app/api/tiktok/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 
 const TOKEN_URL = "https://open-api.tiktokglobalplatform.com/v2/oauth/token/";
 const LIST_URL = "https://open.tiktokapis.com/v2/video/list/";
 
-async function refreshAccessToken(refreshToken: string) {
+type TikTokVideo = { id: string; author?: { unique_id?: string }; cover_image_url?: string };
+type TikTokListResponse = { data?: { videos?: TikTokVideo[] } };
+
+async function refreshAccessToken(refreshToken: string): Promise<string> {
   const body = new URLSearchParams({
     client_key: process.env.TIKTOK_CLIENT_KEY!,
     client_secret: process.env.TIKTOK_CLIENT_SECRET!,
@@ -17,16 +20,19 @@ async function refreshAccessToken(refreshToken: string) {
     body,
     cache: "no-store",
   });
-  const j = await r.json();
-  const token = j?.data?.access_token as string | undefined;
+  const j = (await r.json()) as { data?: { access_token?: string } };
+  const token = j?.data?.access_token;
   if (!token) throw new Error("Cannot refresh access_token");
   return token;
 }
 
-export async function GET(req: any) {
-  const refreshToken = req?.cookies?.get?.("tt_refresh")?.value || "";
+export async function GET(req: NextRequest) {
+  const refreshToken = req.cookies.get("tt_refresh")?.value || "";
   if (!refreshToken) {
-    return NextResponse.json({ items: [], auth: false, message: "Connect TikTok at /api/auth/tiktok" });
+    return NextResponse.json(
+      { items: [], auth: false, message: "Connect TikTok at /api/auth/tiktok" },
+      { status: 401 }
+    );
   }
 
   try {
@@ -42,15 +48,16 @@ export async function GET(req: any) {
       cache: "no-store",
     });
 
-    const data = await r.json();
-    const items = (data?.data?.videos || []).map((v: any) => ({
-      id: v?.id,
-      url: `https://www.tiktok.com/@${v?.author?.unique_id}/video/${v?.id}`,
-      cover: v?.cover_image_url,
+    const data = (await r.json()) as TikTokListResponse;
+    const items = (data?.data?.videos ?? []).map((v) => ({
+      id: v.id,
+      url: `https://www.tiktok.com/@${v.author?.unique_id}/video/${v.id}`,
+      cover: v.cover_image_url,
     }));
 
     return NextResponse.json({ items, auth: true });
-  } catch (e: any) {
-    return NextResponse.json({ items: [], auth: false, error: e.message }, { status: 500 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "unknown_error";
+    return NextResponse.json({ items: [], auth: false, error: msg }, { status: 500 });
   }
 }
