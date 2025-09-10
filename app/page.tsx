@@ -3,7 +3,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Script from "next/script";
+
 import { useEffect, useState } from "react";
+
+declare global {
+  interface Window {
+    tiktokEmbedLoaded?: () => void;
+  }
+}
 
 export default function Home() {
   return (
@@ -221,33 +228,35 @@ function Process() {
 }
 
 function TikTokGrid() {
-  const [items, setItems] = useState<{id:string;url:string;cover?:string}[]>([]);
+  const [items, setItems] = useState<{ id: string; url: string; cover?: string }[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    let timer: any;
 
     async function load() {
       try {
         const r = await fetch("/api/tiktok", { cache: "no-store" });
-        const j = await r.json();
+        const j: { items?: { id: string; url: string; cover?: string }[]; error?: string } = await r.json();
         if (!r.ok) throw new Error(j?.error || "Fetch failed");
         if (mounted) setItems(j.items || []);
+
         // hydrate embeds
-        // @ts-ignore
-        if (typeof window !== "undefined" && (window as any).tiktokEmbedLoaded) {
-          (window as any).tiktokEmbedLoaded();
+        if (typeof window !== "undefined" && window.tiktokEmbedLoaded) {
+          window.tiktokEmbedLoaded();
         }
-      } catch (e:any) {
-        setErr(e.message);
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : "unknown_error");
       }
     }
 
     load();
-    timer = setInterval(load, 5 * 60 * 1000); // ⏱️ 5 min
+    const timer = setInterval(load, 5 * 60 * 1000); // ⏱️ 5 min
 
-    return () => { mounted = false; clearInterval(timer); };
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
   }, []);
 
   return (
