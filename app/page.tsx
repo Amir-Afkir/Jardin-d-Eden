@@ -261,7 +261,9 @@ function TikTokGrid() {
 
   return (
     <>
-      <Script src="https://www.tiktok.com/embed.js" strategy="afterInteractive" />
+      {items.length > 0 && (
+        <Script src="https://www.tiktok.com/embed.js" strategy="afterInteractive" />
+      )}
       {err && <div className="text-sm text-foreground/70">TikTok indisponible : {err}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {items.map(({ id, url }) => (
@@ -273,7 +275,7 @@ function TikTokGrid() {
             style={{ maxWidth: "100%", minWidth: "260px" }}
           >
             <section>
-              <a target="_blank" rel="noopener noreferrer" href={url}>{url}</a>
+              <a target="_blank" rel="nofollow noopener noreferrer" href={url}>{url}</a>
             </section>
           </blockquote>
         ))}
