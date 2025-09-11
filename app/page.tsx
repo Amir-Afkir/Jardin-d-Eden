@@ -4,7 +4,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Script from "next/script";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import type mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 declare global {
   interface Window {
@@ -61,14 +63,14 @@ function Hero() {
   return (
     <section className="relative overflow-hidden">
       {/* Background video placeholder (replace src with your video) */}
-      <div className="absolute inset-0 -z-10">
+      <div className="absolute inset-0 z-0 pointer-events-none">
         <video
           className="h-full w-full object-cover"
           autoPlay
           muted
           loop
           playsInline
-          poster="/hero-poster.jpg"
+          poster="/hero-poster.jpeg"
         >
           <source src="/hero-garden.webm" type="video/webm" />
           <source src="/hero-garden.mp4" type="video/mp4" />
@@ -76,7 +78,7 @@ function Hero() {
         <div className="absolute inset-0 bg-black/35" />
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 py-28 md:py-40">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-28 md:py-40">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -123,17 +125,20 @@ function TrustBar() {
 
 function Services() {
   const items = [
-    { title: "Conception", desc: "Plans, palettes végétales, vues" },
-    { title: "Aménagement", desc: "Terrasses, allées, bassins, éclairage" },
-    { title: "Végétal", desc: "Massifs, haies, pelouses éco‑gérées" },
-    { title: "Arrosage & Eau", desc: "Récupération d’eau, arrosage piloté" },
-    { title: "Entretien", desc: "Contrats saisonniers et ponctuels" },
-    { title: "Minéral", desc: "Pierre naturelle, gabions, pas japonais" },
+    { title: "Gazon en rouleau", desc: "Pose express, rendu immédiat, variétés adaptées au climat local." },
+    { title: "Clôture", desc: "Clôtures bois, grillage rigide, occultants — esthétique & sécurité." },
+    { title: "Entretien", desc: "Taille, désherbage, tonte, fertilisation — contrats saisonniers." },
+    { title: "Création", desc: "Conception complète de jardin : massifs, allées, éclairage, bassins." },
+    { title: "Pavage", desc: "Terrasses & allées en pierre/pavés — poses durables et antidérapantes." },
+    { title: "Arrosage automatique", desc: "Systèmes pilotés & économes, programmateurs et goutte‑à‑goutte." },
   ];
   return (
     <section id="services" className="mx-auto max-w-6xl px-4 py-16">
-      <h2 className="text-2xl md:text-3xl font-semibold">Services</h2>
-      <p className="mt-2 text-foreground/70 max-w-2xl">Tout ce qu’il faut pour un jardin durable et agréable à vivre.</p>
+      <h2 className="text-2xl md:text-3xl font-semibold">Nos prestations</h2>
+      <p className="mt-2 text-foreground/70 max-w-2xl">
+        Aménagement & entretien clé en main : du gazon posé en 24h à l’arrosage automatique, en passant par la clôture,
+        la création sur‑mesure et le pavage durable.
+      </p>
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {items.map((it) => (
           <motion.div
@@ -154,9 +159,9 @@ function Services() {
 
 function ProjectsTeaser() {
   const projects = [
-    { title: "Cour végétale, centre-ville", img: "/projects/p1.jpg" },
-    { title: "Terrasse bois & bassin", img: "/projects/p2.jpg" },
-    { title: "Jardin méditerranéen", img: "/projects/p3.jpg" },
+    { title: "Cour végétale, centre-ville", img: "/projects/p1.jpeg" },
+    { title: "Terrasse bois & bassin", img: "/projects/p2.jpeg" },
+    { title: "Jardin méditerranéen", img: "/projects/p3.jpeg" },
   ];
   return (
     <section id="projets" className="bg-background/50">
@@ -190,11 +195,11 @@ function BeforeAfter() {
       {/* Simple before/after without external lib (replace images) */}
       <div className="mt-6 grid md:grid-cols-2 gap-4">
         <div className="relative h-72 rounded-xl overflow-hidden border border-white/10">
-          <Image src="/before.jpg" alt="Avant" fill className="object-cover" />
+          <Image src="/before.webp" alt="Avant" fill className="object-cover" />
           <span className="absolute left-3 top-3 text-xs bg-black/60 text-white px-2 py-1 rounded">Avant</span>
         </div>
         <div className="relative h-72 rounded-xl overflow-hidden border border-white/10">
-          <Image src="/after.jpg" alt="Après" fill className="object-cover" />
+          <Image src="/after.webp" alt="Après" fill className="object-cover" />
           <span className="absolute left-3 top-3 text-xs bg-black/60 text-white px-2 py-1 rounded">Après</span>
         </div>
       </div>
@@ -205,7 +210,7 @@ function BeforeAfter() {
 function Process() {
   const steps = [
     { t: "Appel & Devis", d: "On écoute votre besoin et on cadre le budget." },
-    { t: "Étude & 3D", d: "Plans, matériaux, palettes végétales." },
+    { t: "Étude", d: "Plans, matériaux, palettes végétales." },
     { t: "Chantier", d: "Exécution propre, délais tenus." },
     { t: "Suivi & Entretien", d: "On accompagne les saisons." },
   ];
@@ -302,16 +307,201 @@ function SocialWall() {
 }
 
 function Coverage() {
-  const cities = ["Orléans", "Saint-Jean-de-Braye", "Fleury-les-Aubrais", "Saran", "Semoy", "Olivet"];
+  // Villes + coords (approx) pour un rendu réaliste autour d'Orléans
+  const cities = [
+    { name: "Orléans", coords: [1.909, 47.902] },
+    { name: "Saint-Jean-de-Braye", coords: [1.973, 47.909] },
+    { name: "Fleury-les-Aubrais", coords: [1.908, 47.933] },
+    { name: "Saran", coords: [1.876, 47.951] },
+    { name: "Semoy", coords: [1.978, 47.942] },
+    { name: "Olivet", coords: [1.906, 47.862] },
+  ];
+
+  // Token Mapbox (défini côté env de build)
+  const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+  // Mapbox container ref
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapInstance = useRef<mapboxgl.Map | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      if (!MAPBOX_TOKEN || !mapRef.current) return;
+
+      // import dynamique pour éviter le SSR
+      const { default: mapboxgl } = await import("mapbox-gl");
+      (mapboxgl as any).accessToken = MAPBOX_TOKEN as string;
+      // Initialise la carte (style sombre élégant)
+      const map = new mapboxgl.Map({
+        container: mapRef.current,
+        style: "mapbox://styles/mapbox/dark-v11",
+        center: [1.909, 47.902],
+        zoom: 10.4,
+        attributionControl: false,
+      });
+      mapInstance.current = map;
+
+      // Ajoute contrôles minimalistes
+      map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "bottom-right");
+
+      // Convertit les villes en GeoJSON
+      const features = cities.map((c) => ({
+        type: "Feature",
+        properties: { title: c.name },
+        geometry: { type: "Point", coordinates: c.coords },
+      }));
+      const fc = { type: "FeatureCollection", features } as any;
+
+      // Fonction pour générer un polygone circulaire (zone d'intervention)
+      function circlePolygon(center: [number, number], radiusKm = 15, points = 90) {
+        const [lng, lat] = center;
+        const coords: [number, number][] = [];
+        for (let i = 0; i <= points; i++) {
+          const angle = (i / points) * 2 * Math.PI;
+          const dx = (radiusKm / 111) * Math.cos(angle); // ~111km par degré lat
+          const dy = (radiusKm / 111) * Math.sin(angle);
+          coords.push([lng + dx / Math.cos((lat * Math.PI) / 180), lat + dy]);
+        }
+        return {
+          type: "Feature",
+          properties: {},
+          geometry: {
+            type: "Polygon",
+            coordinates: [coords],
+          },
+        } as any;
+      }
+
+      map.on("load", () => {
+        // Couche zone (halo doux)
+        const zone = circlePolygon([1.909, 47.902], 18);
+        map.addSource("zone", { type: "geojson", data: zone });
+        map.addLayer({
+          id: "zone-fill",
+          type: "fill",
+          source: "zone",
+          paint: {
+            "fill-color": "#D4AF37",
+            "fill-opacity": 0.08,
+          },
+        });
+        map.addLayer({
+          id: "zone-outline",
+          type: "line",
+          source: "zone",
+          paint: {
+            "line-color": "#D4AF37",
+            "line-width": 2,
+            "line-opacity": 0.5,
+          },
+        });
+
+        // Source des points
+        map.addSource("villes", { type: "geojson", data: fc });
+
+        // Glow sous les points
+        map.addLayer({
+          id: "villes-glow",
+          type: "circle",
+          source: "villes",
+          paint: {
+            "circle-radius": 14,
+            "circle-color": "#D4AF37",
+            "circle-opacity": 0.18,
+            "circle-blur": 0.6,
+          },
+        });
+
+        // Points premium
+        map.addLayer({
+          id: "villes-point",
+          type: "circle",
+          source: "villes",
+          paint: {
+            "circle-radius": 6,
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#000",
+            "circle-color": "#D4AF37",
+          },
+        });
+
+        // Labels
+        map.addLayer({
+          id: "villes-label",
+          type: "symbol",
+          source: "villes",
+          layout: {
+            "text-field": ["get", "title"],
+            "text-font": ["DIN Pro Medium", "Arial Unicode MS Bold"],
+            "text-size": 12,
+            "text-offset": [0, 1.2],
+            "text-anchor": "top",
+          },
+          paint: {
+            "text-color": "#F5E9D5",
+            "text-halo-color": "rgba(0,0,0,0.6)",
+            "text-halo-width": 1,
+          },
+        });
+
+        // Fit aux features
+        const bounds = new mapboxgl.LngLatBounds();
+        cities.forEach((c) => bounds.extend(c.coords as [number, number]));
+        map.fitBounds(bounds, { padding: 60, maxZoom: 11.5, duration: 800 });
+      });
+    })();
+
+    return () => {
+      isMounted = false;
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [MAPBOX_TOKEN]);
+
   return (
     <section id="zone" className="mx-auto max-w-6xl px-4 py-16">
       <h2 className="text-2xl md:text-3xl font-semibold">Zone d’intervention</h2>
-      <p className="mt-2 text-foreground/70">Nous intervenons sur Orléans et alentours. Liste non exhaustive :</p>
-      <ul className="mt-4 flex flex-wrap gap-2 text-sm">
-        {cities.map((c) => (
-          <li key={c} className="px-3 py-1 rounded-full border border-white/10 bg-cream/5">{c}</li>
-        ))}
-      </ul>
+      <p className="mt-2 text-foreground/70">
+        Nous intervenons sur Orléans et alentours. Voici un aperçu de notre zone et des principales communes desservies.
+      </p>
+
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+        {/* Colonne texte */}
+        <div className="lg:col-span-2 space-y-3">
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {cities.map((c) => (
+              <li key={c.name} className="px-3 py-1 rounded-full border border-white/10 bg-cream/5">{c.name}</li>
+            ))}
+          </ul>
+          <p className="text-sm text-foreground/70">
+            Besoin d’une intervention hors zone ? Contacte-nous, on étudie au cas par cas.
+          </p>
+          <Link
+            href="#contact"
+            className="inline-flex mt-2 items-center rounded-full bg-brand hover:bg-brand-600 text-black px-4 py-2 font-medium transition-colors"
+          >
+            Devis gratuit
+          </Link>
+        </div>
+
+        {/* Carte */}
+        <div className="lg:col-span-3">
+          <div
+            ref={mapRef}
+            className="w-full h-[360px] md:h-[460px] rounded-xl border border-white/10 overflow-hidden"
+            style={{ background: "radial-gradient(1200px 400px at 50% -200px, rgba(212,175,55,0.2), transparent)" }}
+          />
+          {!MAPBOX_TOKEN && (
+            <div className="mt-2 text-xs text-foreground/60">
+              ⚠️ Ajoute <code>NEXT_PUBLIC_MAPBOX_TOKEN</code> à tes variables d’environnement pour activer la carte.
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
