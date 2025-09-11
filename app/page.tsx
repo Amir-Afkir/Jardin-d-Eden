@@ -325,7 +325,6 @@ function Coverage() {
   const mapInstance = useRef<mapboxgl.Map | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
     (async () => {
       if (!MAPBOX_TOKEN || !mapRef.current) return;
 
@@ -345,16 +344,19 @@ function Coverage() {
       // Ajoute contrôles minimalistes
       map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "bottom-right");
 
-      // Convertit les villes en GeoJSON
-      const features = cities.map((c) => ({
+      // Convertit les villes en GeoJSON (typé)
+      const features: GeoJSON.Feature<GeoJSON.Point, { title: string }>[] = cities.map((c) => ({
         type: "Feature",
         properties: { title: c.name },
-        geometry: { type: "Point", coordinates: c.coords },
+        geometry: { type: "Point", coordinates: c.coords as [number, number] },
       }));
-      const fc = { type: "FeatureCollection", features } as any;
+      const fc: GeoJSON.FeatureCollection<GeoJSON.Point, { title: string }> = {
+        type: "FeatureCollection",
+        features,
+      };
 
       // Fonction pour générer un polygone circulaire (zone d'intervention)
-      function circlePolygon(center: [number, number], radiusKm = 15, points = 90) {
+      function circlePolygon(center: [number, number], radiusKm = 15, points = 90): GeoJSON.Feature<GeoJSON.Polygon> {
         const [lng, lat] = center;
         const coords: [number, number][] = [];
         for (let i = 0; i <= points; i++) {
@@ -368,15 +370,15 @@ function Coverage() {
           properties: {},
           geometry: {
             type: "Polygon",
-            coordinates: [coords],
+            coordinates: [coords as [number, number][]],
           },
-        } as any;
+        };
       }
 
       map.on("load", () => {
         // Couche zone (halo doux)
-        const zone = circlePolygon([1.909, 47.902], 18);
-        map.addSource("zone", { type: "geojson", data: zone });
+        const zone: GeoJSON.Feature<GeoJSON.Polygon> = circlePolygon([1.909, 47.902], 18);
+        map.addSource("zone", { type: "geojson", data: zone as GeoJSON.Feature<GeoJSON.Polygon> });
         map.addLayer({
           id: "zone-fill",
           type: "fill",
@@ -398,7 +400,7 @@ function Coverage() {
         });
 
         // Source des points
-        map.addSource("villes", { type: "geojson", data: fc });
+        map.addSource("villes", { type: "geojson", data: fc as GeoJSON.FeatureCollection<GeoJSON.Point, { title: string }> });
 
         // Glow sous les points
         map.addLayer({
@@ -453,7 +455,6 @@ function Coverage() {
     })();
 
     return () => {
-      isMounted = false;
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
