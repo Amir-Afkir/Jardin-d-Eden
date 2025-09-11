@@ -238,45 +238,66 @@ function TikTokGrid() {
 
   useEffect(() => {
     let mounted = true;
+    let timer: ReturnType<typeof setInterval> | null = null;
 
     async function load() {
       try {
         const r = await fetch("/api/tiktok", { cache: "no-store" });
+        const status = r.status;
         const j: { items?: { id: string; url: string; cover?: string }[]; error?: string } = await r.json();
-        if (!r.ok) throw new Error(j?.error || "Fetch failed");
-        if (mounted) setItems(j.items || []);
 
-        // hydrate embeds
+        if (!r.ok) {
+          const msg = j?.error || (status === 401 ? "not_connected" : "fetch_failed");
+          throw new Error(msg);
+        }
+
+        if (mounted) {
+          setItems(j.items || []);
+          setErr(null);
+        }
+
+        // hydrate embeds si le script est déjà chargé
         if (typeof window !== "undefined" && window.tiktokEmbedLoaded) {
           window.tiktokEmbedLoaded();
         }
       } catch (e) {
-        setErr(e instanceof Error ? e.message : "unknown_error");
+        if (mounted) setErr(e instanceof Error ? e.message : "unknown_error");
       }
     }
 
     load();
-    const timer = setInterval(load, 5 * 60 * 1000); // ⏱️ 5 min
+    timer = setInterval(load, 5 * 60 * 1000); // ⏱️ 5 min
 
     return () => {
       mounted = false;
-      clearInterval(timer);
+      if (timer) clearInterval(timer);
     };
   }, []);
 
   return (
     <>
+      {/* Ne charge le script d’embed que s’il y a des items */}
       {items.length > 0 && (
         <Script src="https://www.tiktok.com/embed.js" strategy="afterInteractive" />
       )}
-      {err && <div className="text-sm text-foreground/70">TikTok indisponible : {err}</div>}
+
+      {/* Message d’erreur + CTA connexion si 401 */}
+      {err === "not_connected" && (
+        <div className="text-sm text-foreground/70">
+          TikTok non connecté.{" "}
+          <a className="underline" href="/api/auth/tiktok">Connecter le compte TikTok</a>
+        </div>
+      )}
+      {err && err !== "not_connected" && (
+        <div className="text-sm text-foreground/70">TikTok indisponible : {err}</div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {items.map(({ id, url }) => (
           <blockquote
             key={id}
             className="tiktok-embed"
             cite={url}
-            data-video-id=""
             style={{ maxWidth: "100%", minWidth: "260px" }}
           >
             <section>

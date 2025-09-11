@@ -1,10 +1,17 @@
 // app/api/tiktok/route.ts
 import { NextResponse, NextRequest } from "next/server";
 
-const TOKEN_URL = "https://open-api.tiktokglobalplatform.com/v2/oauth/token/";
-const LIST_URL = "https://open.tiktokapis.com/v2/video/list/";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-type TikTokVideo = { id: string; author?: { unique_id?: string }; cover_image_url?: string };
+const TOKEN_URL = "https://open-api.tiktokglobalplatform.com/v2/oauth/token/";
+const LIST_URL  = "https://open.tiktokapis.com/v2/video/list/";
+
+type TikTokVideo = {
+  id: string;
+  author?: { unique_id?: string };
+  cover_image_url?: string;
+};
 type TikTokListResponse = { data?: { videos?: TikTokVideo[] } };
 
 async function refreshAccessToken(refreshToken: string): Promise<string> {
@@ -14,12 +21,14 @@ async function refreshAccessToken(refreshToken: string): Promise<string> {
     grant_type: "refresh_token",
     refresh_token: refreshToken,
   });
+
   const r = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
     cache: "no-store",
   });
+
   const j = (await r.json()) as { data?: { access_token?: string } };
   const token = j?.data?.access_token;
   if (!token) throw new Error("Cannot refresh access_token");

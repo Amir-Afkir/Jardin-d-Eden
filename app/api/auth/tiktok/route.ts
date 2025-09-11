@@ -1,47 +1,62 @@
-// app/api/tiktok/route.ts
+// app/api/auth/tiktok/route.ts
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 
-const TOKEN_URL = "https://open-api.tiktokglobalplatform.com/v2/oauth/token/";
-const LIST_URL  = "https://open.tiktokapis.com/v2/video/list/";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-type TikTokVideo = { id: string; author?: { unique_id?: string }; cover_image_url?: string };
-type TikTokListResponse = { data?: { videos?: TikTokVideo[] } };
+function base64url(buf: Buffer) {
+  return buf
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
 
-async function refreshAccessToken(refreshToken: string): Promise<string> {
-  const body = new URLSearchParams({
-    client_key: process.env.TIKTOK_CLIENT_KEY!,
-    client_secret: process.env.TIKTOK_CLIENT_SECRET!,
-    grant_type: "refresh_token",
-    refresh_token: refreshToken,
-  });
-  const r = await fetch(TOKEN_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body, cache: "no-store" });
-  const j = (await r.json()) as { data?: { access_token?: string } };
-  const token = j?.data?.access_token;
-  if (!token) throw new Error("Cannot refresh access_token");
-  return token;
+function genRandomUrlSafe(len = 48) {
+  return base64url(crypto.randomBytes(len));
 }
 
 export async function GET() {
-  const REFRESH = process.env.TIKTOK_REFRESH_TOKEN;
-  if (!REFRESH) {
-    return NextResponse.json({ items: [], auth: false, message: "Set TIKTOK_REFRESH_TOKEN" }, { status: 500 });
-  }
-  try {
-    const accessToken = await refreshAccessToken(REFRESH);
-    const r = await fetch(LIST_URL, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ max_count: 9 }),
-      cache: "no-store",
-    });
-    const data = (await r.json()) as TikTokListResponse;
-    const items = (data?.data?.videos ?? []).map(v => ({
-      id: v.id,
-      url: `https://www.tiktok.com/@${v.author?.unique_id}/video/${v.id}`,
-      cover: v.cover_image_url,
-    }));
-    return NextResponse.json({ items, auth: true });
-  } catch (e) {
-    return NextResponse.json({ items: [], auth: false, error: e instanceof Error ? e.message : "unknown_error" }, { status: 500 });
-  }
+  const clientKey = process.env.TIKTOK_CLIENT_KEY;
+  const redirectUri = process.env.TIKTOK_REDIRECT_URI;
+  if (!clientKey) throw new Error("Missing env: TIKTOK_CLIENT_KEY");
+  if (!redirectUri) throw new Error("Missing env: TIKTOK_REDIRECT_URI");
+
+  // PKCE
+  const verifier = genRandomUrlSafe(48);
+  const challenge = base64url(
+    crypto.createHash("sha256").update(verifier).digest()
+  );
+  // CSRF
+  const state = genRandomUrlSafe(16);
+
+  const AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/";
+  const u = new URL(AUTH_URL);
+  u.searchParams.set("client_key", clientKey);
+  u.searchParams.set("scope", "user.info.basic,video.list");
+  u.searchParams.set("response_type", "code");
+  u.searchParams.set("redirect_uri", redirectUri);
+  u.searchParams.set("state", state);
+  u.searchParams.set("code_challenge", challenge);
+  u.searchParams.set("code_challenge_method", "S256");
+
+  const isProd = process.env.NODE_ENV === "production";
+  const res = NextResponse.redirect(u.toString());
+  // Cookies temporaires (10 min)
+  res.cookies.set("tt_pkce", verifier, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 600,
+  });
+  res.cookies.set("tt_state", state, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 600,
+  });
+  return res;
 }
