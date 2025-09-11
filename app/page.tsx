@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Script from "next/script";
 
 import { useEffect, useState, useRef } from "react";
-import type mapboxgl from "mapbox-gl";
+import type * as Mapbox from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 declare global {
@@ -322,7 +322,7 @@ function Coverage() {
 
   // Mapbox container ref
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstance = useRef<mapboxgl.Map | null>(null);
+  const mapInstance = useRef<Mapbox.Map | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -330,7 +330,7 @@ function Coverage() {
 
       // import dynamique pour éviter le SSR
       const { default: mapboxgl } = await import("mapbox-gl");
-      (mapboxgl as any).accessToken = MAPBOX_TOKEN as string;
+      mapboxgl.accessToken = MAPBOX_TOKEN as string;
       // Initialise la carte (style sombre élégant)
       const map = new mapboxgl.Map({
         container: mapRef.current,
