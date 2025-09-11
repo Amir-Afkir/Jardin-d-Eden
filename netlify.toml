@@ -8,11 +8,6 @@
   status = 301
   force = true
 
-[[redirects]]
-  from = "/api/auth/tiktok/callback"
-  to = "/api/auth/callback"
-  status = 200
-
 [[headers]]
 for = "/*"
   [headers.values]
@@ -23,9 +18,12 @@ for = "/*"
   Permissions-Policy = "camera=(), microphone=(), geolocation=()"
   Content-Security-Policy = """
     default-src 'self';
-    img-src 'self' data: https://*.tiktokcdn.com https://*.tiktok.com;
-    script-src 'self' https://www.tiktok.com https://*.tiktok.com;
-    style-src 'self' 'unsafe-inline';
+    base-uri 'self';
+    img-src 'self' data: blob: https://*.tiktokcdn.com https://*.tiktok.com https://*.mapbox.com https://api.mapbox.com;
+    media-src 'self' blob: data:;
+    font-src 'self' data:;
+    script-src 'self' https://www.tiktok.com https://*.tiktok.com https://api.mapbox.com;
+    style-src 'self' 'unsafe-inline' https://api.mapbox.com;
     frame-src https://www.tiktok.com https://*.tiktok.com;
-    connect-src 'self' https://open.tiktokapis.com https://open-api.tiktokglobalplatform.com;
+    connect-src 'self' https://open.tiktokapis.com https://open-api.tiktokglobalplatform.com https://api.mapbox.com https://events.mapbox.com;
   """
