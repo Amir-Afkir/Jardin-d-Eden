@@ -112,18 +112,20 @@ export async function GET(req: NextRequest) {
   try {
     const accessToken = await refreshAccessToken(refreshToken);
 
-    // Video list uniquement (l’endpoint user/info n’est pas indispensable et peut être indisponible selon l’app)
-    const vlResp = await fetch(LIST_URL, {
+    // Construire l’URL avec `fields` dans la query string (TikTok attend un CSV en query)
+    const listUrl = new URL(LIST_URL);
+    listUrl.searchParams.set(
+      "fields",
+      "id,cover_image_url,embed_link,share_url,author{unique_id,username,display_name}"
+    );
+
+    const vlResp = await fetch(listUrl.toString(), {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        max_count: 9,
-        // CSV au lieu de tableau
-        fields: "id,cover_image_url,embed_link,share_url,author{unique_id,username,display_name}",
-      }),
+      body: JSON.stringify({ max_count: 9 }),
       cache: "no-store",
     });
 
