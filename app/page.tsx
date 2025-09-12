@@ -242,7 +242,7 @@ function TikTokGrid() {
 
     async function load() {
       try {
-        const r = await fetch("/api/tiktok", { cache: "no-store" });
+        const r = await fetch("/api/tiktok", { cache: "no-store", credentials: "include" });
         const status = r.status;
         const j: { items?: { id: string; url: string; cover?: string }[]; error?: string } = await r.json();
 
