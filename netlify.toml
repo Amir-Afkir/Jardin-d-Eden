@@ -19,11 +19,16 @@ for = "/*"
   Content-Security-Policy = """
     default-src 'self';
     base-uri 'self';
-    img-src 'self' data: blob: https://*.tiktokcdn.com https://*.tiktok.com https://*.mapbox.com https://api.mapbox.com;
+    img-src 'self' data: blob: https://*.tiktokcdn.com https://*.tiktokcdn-eu.com https://*.tiktok.com https://*.mapbox.com https://api.mapbox.com;
     media-src 'self' blob: data:;
     font-src 'self' data:;
     script-src 'self' https://www.tiktok.com https://*.tiktok.com https://api.mapbox.com;
     style-src 'self' 'unsafe-inline' https://api.mapbox.com;
     frame-src https://www.tiktok.com https://*.tiktok.com;
-    connect-src 'self' https://open.tiktokapis.com https://open-api.tiktokglobalplatform.com https://api.mapbox.com https://events.mapbox.com;
+    connect-src 'self'
+      https://open.tiktokapis.com
+      https://open-api.tiktokglobalplatform.com
+      https://www.tiktok.com https://*.tiktok.com
+      https://*.tiktokcdn.com https://*.tiktokcdn-eu.com
+      https://api.mapbox.com https://events.mapbox.com;
   """
