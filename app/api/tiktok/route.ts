@@ -25,9 +25,10 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null;
 
 function extractAccessTokenFromRefresh(resp: RefreshResp): string | undefined {
-  const nested = isRecord(resp) && isRecord(resp.data) ? resp.data.access_token : undefined;
-  const flat = (resp as RefreshFlat).access_token;
-  return nested ?? flat;
+  if ("data" in resp && isRecord(resp.data)) {
+    return resp.data.access_token;
+  }
+  return (resp as RefreshFlat).access_token;
 }
 
 /** ——— Refresh ——— */
