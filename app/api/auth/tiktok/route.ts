@@ -13,7 +13,7 @@ function base64url(buf: Buffer) {
     .replace(/=+$/g, "");
 }
 
-function genRandomUrlSafe(len = 48) {
+function randomUrlSafe(len = 48) {
   return base64url(crypto.randomBytes(len));
 }
 
@@ -24,12 +24,11 @@ export async function GET() {
   if (!redirectUri) throw new Error("Missing env: TIKTOK_REDIRECT_URI");
 
   // PKCE
-  const verifier = genRandomUrlSafe(48);
-  const challenge = base64url(
-    crypto.createHash("sha256").update(verifier).digest()
-  );
-  // CSRF
-  const state = genRandomUrlSafe(16);
+  const verifier = randomUrlSafe(48);
+  const challenge = base64url(crypto.createHash("sha256").update(verifier).digest());
+
+  // Anti-CSRF
+  const state = randomUrlSafe(16);
 
   const AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/";
   const u = new URL(AUTH_URL);
@@ -43,6 +42,7 @@ export async function GET() {
 
   const isProd = process.env.NODE_ENV === "production";
   const res = NextResponse.redirect(u.toString());
+
   // Cookies temporaires (10 min)
   res.cookies.set("tt_pkce", verifier, {
     httpOnly: true,
@@ -58,5 +58,6 @@ export async function GET() {
     path: "/",
     maxAge: 600,
   });
+
   return res;
 }

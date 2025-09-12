@@ -4,12 +4,50 @@ import { NextResponse, NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type TokenShape =
-  | { data?: { refresh_token?: string; access_token?: string }; error?: { message?: string }; message?: string }
-  | { refresh_token?: string; access_token?: string; error?: { message?: string }; message?: string };
+const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 
-const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"; // ← endpoint unifié
+/** ——— Types robustes (pas de any) ——— */
+type OAuthError = { message?: string; code?: number };
+type OAuthData = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  refresh_expires_in?: number;
+  scope?: string;
+  token_type?: string;
+  open_id?: string;
+};
+type OAuthWrapped = { data?: OAuthData; error?: OAuthError; message?: string };
+type OAuthFlat = OAuthData & { error?: OAuthError; message?: string };
+type OAuthResp = OAuthWrapped | OAuthFlat;
 
+/** ——— Helpers type-safe ——— */
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null;
+
+const pick = <T extends string>(o: unknown, key: T): unknown =>
+  isRecord(o) ? o[key] : undefined;
+
+function extractAccessToken(resp: OAuthResp): string | undefined {
+  const data = pick(resp, "data");
+  const nested = isRecord(data) ? (data as OAuthData).access_token : undefined;
+  const flat = (resp as OAuthFlat).access_token;
+  return nested ?? flat;
+}
+function extractRefreshToken(resp: OAuthResp): string | undefined {
+  const data = pick(resp, "data");
+  const nested = isRecord(data) ? (data as OAuthData).refresh_token : undefined;
+  const flat = (resp as OAuthFlat).refresh_token;
+  return nested ?? flat;
+}
+function extractLogicalError(resp: OAuthResp): string | undefined {
+  const err = pick(resp, "error");
+  const msg1 = isRecord(err) ? (err.message as string | undefined) : undefined;
+  const msg2 = pick(resp, "message") as string | undefined;
+  return msg1 ?? msg2;
+}
+
+/** ——— Handler ——— */
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
@@ -39,7 +77,6 @@ export async function GET(req: NextRequest) {
     code_verifier: pkce,
   });
 
-  let json: TokenShape;
   try {
     const r = await fetch(TOKEN_URL, {
       method: "POST",
@@ -51,81 +88,41 @@ export async function GET(req: NextRequest) {
       cache: "no-store",
     });
 
-    // TikTok peut renvoyer 200 même en cas d'erreur logique ; on vérifie le contenu.
-    json = (await r.json()) as TokenShape;
+    const json = (await r.json()) as OAuthResp;
 
-    // Helpers de typage sûrs
-    const isString = (v: unknown): v is string => typeof v === "string";
-
-    let refreshToken: string | undefined;
-    let accessToken: string | undefined;
-    let logicalError: string | undefined;
-
-    // Chemin 1: réponse imbriquée sous `data`
-    if (
-      typeof json === "object" &&
-      json !== null &&
-      "data" in json &&
-      typeof (json as { data?: unknown }).data === "object" &&
-      (json as { data?: unknown }).data !== null
-    ) {
-      const d = (json as { data: Record<string, unknown> }).data;
-      const rt = d["refresh_token"];
-      const at = d["access_token"];
-      if (isString(rt)) refreshToken = rt;
-      if (isString(at)) accessToken = at;
-    }
-
-    // Chemin 2: champs à la racine
-    if (!refreshToken || !accessToken) {
-      const root = json as Record<string, unknown>;
-      const rt = root["refresh_token"];
-      const at = root["access_token"];
-      if (!refreshToken && isString(rt)) refreshToken = rt;
-      if (!accessToken && isString(at)) accessToken = at;
-    }
-
-    // Extraction d'un éventuel message d'erreur
-    if (typeof json === "object" && json !== null) {
-      const root = json as Record<string, unknown>;
-      const errObj = root["error"] as unknown;
-      if (typeof errObj === "object" && errObj !== null) {
-        const msg = (errObj as Record<string, unknown>)["message"];
-        if (isString(msg)) logicalError = msg;
-      }
-      const msg2 = root["message"];
-      if (!logicalError && isString(msg2)) logicalError = msg2;
-    }
+    const refreshToken = extractRefreshToken(json);
+    const accessToken = extractAccessToken(json);
+    const logicalErr = extractLogicalError(json);
 
     if (!refreshToken) {
-      const msg = logicalError || "oauth_exchange_failed";
+      const msg = logicalErr ?? "oauth_exchange_failed";
       return NextResponse.redirect(addMsg("/", `oauth_exchange_failed:${msg}`));
     }
 
     const isProd = process.env.NODE_ENV === "production";
     const res = NextResponse.redirect(addMsg("/", "connected"));
 
-    // Cookie refresh token (longue durée)
-    res.cookies.set("tt_refresh", refreshToken as string, {
+    // Cookie refresh token (long)
+    res.cookies.set("tt_refresh", refreshToken, {
       httpOnly: true,
       secure: isProd,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 30, // 30 jours
+      maxAge: 60 * 60 * 24 * 30,
     });
 
-    // Cookie access token (optionnel, courte durée)
+    // Cookie access token (court)
     if (accessToken) {
-      res.cookies.set("tt_access", accessToken as string, {
+      res.cookies.set("tt_access", accessToken, {
         httpOnly: true,
         secure: isProd,
         sameSite: "lax",
         path: "/",
-        maxAge: 60 * 60 * 2, // 2 h
+        maxAge: 60 * 60 * 2,
       });
     }
 
-    // Nettoyage des cookies temporaires
+    // Clean des temporaires
     res.cookies.set("tt_pkce", "", { path: "/", maxAge: 0 });
     res.cookies.set("tt_state", "", { path: "/", maxAge: 0 });
 
@@ -136,6 +133,7 @@ export async function GET(req: NextRequest) {
 }
 
 function addMsg(base: string, msg: string) {
+  // URL relative (redirige vers la home avec ?tiktok=...)
   const u = new URL(base, "http://dummy");
   u.searchParams.set("tiktok", msg);
   return u.pathname + u.search;
