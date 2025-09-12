@@ -121,7 +121,8 @@ export async function GET(req: NextRequest) {
       },
       body: JSON.stringify({
         max_count: 9,
-        fields: ["id", "cover_image_url", "embed_link", "share_url", "author{unique_id,username,display_name}"],
+        // CSV au lieu de tableau
+        fields: "id,cover_image_url,embed_link,share_url,author{unique_id,username,display_name}",
       }),
       cache: "no-store",
     });
