@@ -28,12 +28,20 @@ type TikTokListResponse = {
   message?: string;
 };
 
-type TokenResponseShape =
-  | { data?: { access_token?: string } }
-  | { access_token?: string };
+type TokenResponseShape = unknown;
 
 function pickAccessToken(j: TokenResponseShape): string | undefined {
-  return (j as any)?.data?.access_token ?? (j as any)?.access_token;
+  if (j && typeof j === "object") {
+    const root = j as Record<string, unknown>;
+    const data = root["data"];
+    if (data && typeof data === "object") {
+      const access = (data as Record<string, unknown>)["access_token"];
+      if (typeof access === "string") return access;
+    }
+    const access2 = root["access_token"];
+    if (typeof access2 === "string") return access2;
+  }
+  return undefined;
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<string> {
