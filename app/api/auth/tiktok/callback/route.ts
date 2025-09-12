@@ -54,16 +54,51 @@ export async function GET(req: NextRequest) {
     // TikTok peut renvoyer 200 même en cas d'erreur logique ; on vérifie le contenu.
     json = (await r.json()) as TokenShape;
 
-    const refreshToken =
-      (json as any)?.data?.refresh_token ?? (json as any)?.refresh_token ?? null;
-    const accessToken =
-      (json as any)?.data?.access_token ?? (json as any)?.access_token ?? null;
+    // Helpers de typage sûrs
+    const isString = (v: unknown): v is string => typeof v === "string";
+
+    let refreshToken: string | undefined;
+    let accessToken: string | undefined;
+    let logicalError: string | undefined;
+
+    // Chemin 1: réponse imbriquée sous `data`
+    if (
+      typeof json === "object" &&
+      json !== null &&
+      "data" in json &&
+      typeof (json as { data?: unknown }).data === "object" &&
+      (json as { data?: unknown }).data !== null
+    ) {
+      const d = (json as { data: Record<string, unknown> }).data;
+      const rt = d["refresh_token"];
+      const at = d["access_token"];
+      if (isString(rt)) refreshToken = rt;
+      if (isString(at)) accessToken = at;
+    }
+
+    // Chemin 2: champs à la racine
+    if (!refreshToken || !accessToken) {
+      const root = json as Record<string, unknown>;
+      const rt = root["refresh_token"];
+      const at = root["access_token"];
+      if (!refreshToken && isString(rt)) refreshToken = rt;
+      if (!accessToken && isString(at)) accessToken = at;
+    }
+
+    // Extraction d'un éventuel message d'erreur
+    if (typeof json === "object" && json !== null) {
+      const root = json as Record<string, unknown>;
+      const errObj = root["error"] as unknown;
+      if (typeof errObj === "object" && errObj !== null) {
+        const msg = (errObj as Record<string, unknown>)["message"];
+        if (isString(msg)) logicalError = msg;
+      }
+      const msg2 = root["message"];
+      if (!logicalError && isString(msg2)) logicalError = msg2;
+    }
 
     if (!refreshToken) {
-      const msg =
-        (json as any)?.error?.message ||
-        (json as any)?.message ||
-        "oauth_exchange_failed";
+      const msg = logicalError || "oauth_exchange_failed";
       return NextResponse.redirect(addMsg("/", `oauth_exchange_failed:${msg}`));
     }
 
