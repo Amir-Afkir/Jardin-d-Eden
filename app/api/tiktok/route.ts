@@ -72,7 +72,13 @@ export async function GET(req: NextRequest) {
     const accessToken = await refreshAccessToken(refreshToken);
 
     // IMPORTANT : demander des fields pour récupérer l'auteur et pouvoir fabriquer l'URL
-    const r = await fetch(LIST_URL, {
+    const listUrl = new URL(LIST_URL);
+    listUrl.searchParams.set(
+      "fields",
+      "id,cover_image_url,embed_link,share_url,author{unique_id,username,display_name}"
+    );
+
+    const r = await fetch(listUrl.toString(), {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -80,7 +86,6 @@ export async function GET(req: NextRequest) {
       },
       body: JSON.stringify({
         max_count: 9,
-        fields: "id,cover_image_url,embed_link,share_url,author{unique_id,username,display_name}",
       }),
       cache: "no-store",
     });
