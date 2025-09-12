@@ -292,31 +292,31 @@ function TikTokGrid() {
         <div className="text-sm text-foreground/70">TikTok indisponible : {err}</div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {items.map(({ id, url, embed, cover }) => (
-          embed ? (
-            <iframe
-              key={id}
-              src={embed}
-              allow="autoplay; fullscreen; picture-in-picture"
-              loading="lazy"
-              style={{ width: "100%", aspectRatio: "9 / 16", border: 0, borderRadius: 12 }}
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-          ) : (
-            <blockquote
-              key={id}
-              className="tiktok-embed"
-              cite={url}
-              style={{ maxWidth: "100%", minWidth: 260 }}
-            >
-              <section>
-                <a target="_blank" rel="nofollow noopener noreferrer" href={url}>
-                  {url}
-                </a>
-              </section>
-            </blockquote>
-          )
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 justify-items-center">
+        {items.map(({ id, url, embed }) => (
+          <div key={id} className="w-full max-w-[320px]">
+            {embed ? (
+              <iframe
+                src={embed}
+                allow="autoplay; fullscreen; picture-in-picture"
+                loading="lazy"
+                style={{ width: "100%", aspectRatio: "9 / 16", border: 0, borderRadius: 12 }}
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            ) : (
+              <blockquote
+                className="tiktok-embed"
+                cite={url}
+                style={{ maxWidth: 320, minWidth: 260 }}
+              >
+                <section>
+                  <a target="_blank" rel="nofollow noopener noreferrer" href={url}>
+                    {url}
+                  </a>
+                </section>
+              </blockquote>
+            )}
+          </div>
         ))}
       </div>
     </>
