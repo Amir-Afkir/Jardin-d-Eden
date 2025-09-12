@@ -5,8 +5,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
-const LIST_URL  = "https://open.tiktokapis.com/v2/video/list/";
+const LIST_URL = "https://open.tiktokapis.com/v2/video/list/";
 
+// --- Types sûrs (pas de `any`) ---
 type TikTokTokenResp = {
   data?: { access_token?: string };
   access_token?: string;
@@ -19,11 +20,7 @@ type TikTokVideo = {
   cover_image_url?: string;
   embed_link?: string;
   share_url?: string;
-  author?: {
-    unique_id?: string;
-    username?: string;
-    display_name?: string;
-  };
+  // NOTE: on ne demande plus `author{...}` car l'API le refuse en Sandbox
 };
 
 type TikTokListResponse = {
@@ -71,11 +68,11 @@ export async function GET(req: NextRequest) {
   try {
     const accessToken = await refreshAccessToken(refreshToken);
 
-    // IMPORTANT : demander des fields pour récupérer l'auteur et pouvoir fabriquer l'URL
+    // IMPORTANT : ne pas demander de champs refusés par l'API (ex: author{...})
     const listUrl = new URL(LIST_URL);
     listUrl.searchParams.set(
       "fields",
-      "id,cover_image_url,embed_link,share_url,author{unique_id,username,display_name}"
+      "id,cover_image_url,embed_link,share_url"
     );
 
     const r = await fetch(listUrl.toString(), {
@@ -84,23 +81,20 @@ export async function GET(req: NextRequest) {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        max_count: 9,
-      }),
+      body: JSON.stringify({ max_count: 9 }),
       cache: "no-store",
     });
 
     const data = (await r.json()) as TikTokListResponse;
-
     const videos = data?.data?.videos ?? [];
 
-    // Fabrique une URL exploitable avec fallback si unique_id absent
-    const items = videos.map((v) => {
-      const unique = v.author?.unique_id;
-      const urlFromAuthor = unique ? `https://www.tiktok.com/@${unique}/video/${v.id}` : undefined;
-      const url = urlFromAuthor || v.share_url || v.embed_link || "";
-      return { id: v.id, url, cover: v.cover_image_url };
-    }).filter((i) => i.url); // on garde seulement celles qui ont une URL
+    // Construit une URL exploitable à partir de share_url puis embed_link
+    const items = videos
+      .map((v) => {
+        const url = v.share_url || v.embed_link || "";
+        return { id: v.id, url, cover: v.cover_image_url };
+      })
+      .filter((i) => i.url);
 
     const hint =
       items.length === 0

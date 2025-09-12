@@ -112,12 +112,13 @@ export async function GET(req: NextRequest) {
   try {
     const accessToken = await refreshAccessToken(refreshToken);
 
-    // Construire l’URL avec `fields` dans la query string (TikTok attend un CSV en query)
+    // Construire l’URL avec les fields valides (pas de champs imbriqués)
     const listUrl = new URL(LIST_URL);
     listUrl.searchParams.set(
-      "fields",
-      "id,cover_image_url,embed_link,share_url,author{unique_id,username,display_name}"
+    "fields",
+    "id,cover_image_url,embed_link,share_url"
     );
+
 
     const vlResp = await fetch(listUrl.toString(), {
       method: "POST",
@@ -147,9 +148,8 @@ export async function GET(req: NextRequest) {
 
     const items =
       videoList.data?.videos?.map((v) => {
-        const byUnique = v.author?.unique_id ? `https://www.tiktok.com/@${v.author.unique_id}/video/${v.id}` : undefined;
-        const url = byUnique ?? v.share_url ?? "";
-        const embed = v.embed_link ?? "";
+        const url = v.share_url || v.embed_link || "";
+        const embed = v.embed_link || "";
         return { id: v.id, url, embed, cover: v.cover_image_url };
       }) ?? [];
 
