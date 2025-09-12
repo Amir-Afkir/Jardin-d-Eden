@@ -4,80 +4,79 @@ import { NextResponse, NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type OAuthError = { message?: string; code?: number };
+type TokenWrapped = { data?: { refresh_token?: string; access_token?: string }; error?: OAuthError; message?: string };
+type TokenFlat = { refresh_token?: string; access_token?: string; error?: OAuthError; message?: string };
+type TokenResp = TokenWrapped | TokenFlat;
+
 const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 
-/** ——— Types robustes (pas de any) ——— */
-type OAuthError = { message?: string; code?: number };
-type OAuthData = {
-  access_token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  refresh_expires_in?: number;
-  scope?: string;
-  token_type?: string;
-  open_id?: string;
-};
-type OAuthWrapped = { data?: OAuthData; error?: OAuthError; message?: string };
-type OAuthFlat = OAuthData & { error?: OAuthError; message?: string };
-type OAuthResp = OAuthWrapped | OAuthFlat;
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 
-/** ——— Helpers type-safe ——— */
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === "object" && v !== null;
+function extractTokens(resp: TokenResp) {
+  let refreshToken: string | undefined;
+  let accessToken: string | undefined;
+  let logicalError: string | undefined;
 
-const pick = <T extends string>(o: unknown, key: T): unknown =>
-  isRecord(o) ? o[key] : undefined;
-
-function extractAccessToken(resp: OAuthResp): string | undefined {
-  const data = pick(resp, "data");
-  const nested = isRecord(data) ? (data as OAuthData).access_token : undefined;
-  const flat = (resp as OAuthFlat).access_token;
-  return nested ?? flat;
-}
-function extractRefreshToken(resp: OAuthResp): string | undefined {
-  const data = pick(resp, "data");
-  const nested = isRecord(data) ? (data as OAuthData).refresh_token : undefined;
-  const flat = (resp as OAuthFlat).refresh_token;
-  return nested ?? flat;
-}
-function extractLogicalError(resp: OAuthResp): string | undefined {
-  const err = pick(resp, "error");
-  const msg1 = isRecord(err) ? (err.message as string | undefined) : undefined;
-  const msg2 = pick(resp, "message") as string | undefined;
-  return msg1 ?? msg2;
-}
-
-/** ——— Handler ——— */
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const code = url.searchParams.get("code");
-  const oauthError = url.searchParams.get("error");
-  const returnedState = url.searchParams.get("state");
-
-  const expectedState = req.cookies.get("tt_state")?.value;
-  const pkce = req.cookies.get("tt_pkce")?.value;
-
-  if (oauthError) return NextResponse.redirect(addMsg("/", `oauth_error:${oauthError}`));
-  if (!code) return NextResponse.redirect(addMsg("/", "no_code"));
-  if (expectedState && returnedState && expectedState !== returnedState) {
-    return NextResponse.redirect(addMsg("/", "oauth_state_mismatch"));
+  // chemin imbriqué
+  if (isRecord(resp) && isRecord((resp as any).data)) {
+    const d = (resp as any).data as Record<string, unknown>;
+    if (typeof d.refresh_token === "string") refreshToken = d.refresh_token;
+    if (typeof d.access_token === "string") accessToken = d.access_token;
   }
-  if (!pkce) return NextResponse.redirect(addMsg("/", "missing_pkce_verifier"));
+  // chemin flat
+  if (!refreshToken || !accessToken) {
+    const root = resp as Record<string, unknown>;
+    if (!refreshToken && typeof root.refresh_token === "string") refreshToken = root.refresh_token;
+    if (!accessToken && typeof root.access_token === "string") accessToken = root.access_token;
+  }
+  // messages d'erreur
+  if (isRecord(resp?.error) && typeof resp.error!.message === "string") logicalError = resp.error!.message;
+  if (!logicalError && isRecord(resp) && typeof (resp as any).message === "string") logicalError = (resp as any).message;
 
-  const clientKey = process.env.TIKTOK_CLIENT_KEY!;
-  const clientSecret = process.env.TIKTOK_CLIENT_SECRET!;
-  const redirectUri = process.env.TIKTOK_REDIRECT_URI!;
+  return { refreshToken, accessToken, logicalError };
+}
 
-  const body = new URLSearchParams({
-    client_key: clientKey,
-    client_secret: clientSecret,
-    code,
-    grant_type: "authorization_code",
-    redirect_uri: redirectUri,
-    code_verifier: pkce,
-  });
+function addMsg(base: string, msg: string) {
+  const u = new URL(base, "http://dummy");
+  u.searchParams.set("tiktok", msg);
+  return u.pathname + u.search;
+}
 
+export async function GET(req: NextRequest) {
   try {
+    const url = new URL(req.url);
+    const code = url.searchParams.get("code");
+    const oauthError = url.searchParams.get("error");
+    const returnedState = url.searchParams.get("state");
+
+    const expectedState = req.cookies.get("tt_state")?.value;
+    const pkce = req.cookies.get("tt_pkce")?.value;
+
+    if (oauthError) return NextResponse.redirect(addMsg("/", `oauth_error:${oauthError}`));
+    if (!code) return NextResponse.redirect(addMsg("/", "no_code"));
+    if (expectedState && returnedState && expectedState !== returnedState) {
+      return NextResponse.redirect(addMsg("/", "oauth_state_mismatch"));
+    }
+    if (!pkce) return NextResponse.redirect(addMsg("/", "missing_pkce_verifier"));
+
+    const clientKey = process.env.TIKTOK_CLIENT_KEY || "";
+    const clientSecret = process.env.TIKTOK_CLIENT_SECRET || "";
+    const redirectUri = process.env.TIKTOK_REDIRECT_URI || "";
+
+    if (!clientKey || !clientSecret || !redirectUri) {
+      return NextResponse.redirect(addMsg("/", "server_env_missing"));
+    }
+
+    const body = new URLSearchParams({
+      client_key: clientKey,
+      client_secret: clientSecret,
+      code,
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+      code_verifier: pkce,
+    });
+
     const r = await fetch(TOKEN_URL, {
       method: "POST",
       headers: {
@@ -88,21 +87,36 @@ export async function GET(req: NextRequest) {
       cache: "no-store",
     });
 
-    const json = (await r.json()) as OAuthResp;
+    // tente JSON, sinon texte
+    let respJson: TokenResp | null = null;
+    let rawText = "";
+    try {
+      respJson = (await r.json()) as TokenResp;
+    } catch {
+      try {
+        rawText = await r.text();
+      } catch {
+        rawText = "";
+      }
+    }
 
-    const refreshToken = extractRefreshToken(json);
-    const accessToken = extractAccessToken(json);
-    const logicalErr = extractLogicalError(json);
+    // extraire tokens si JSON
+    let refreshToken: string | undefined;
+    let accessToken: string | undefined;
+    let logicalError: string | undefined;
+
+    if (respJson) {
+      ({ refreshToken, accessToken, logicalError } = extractTokens(respJson));
+    }
 
     if (!refreshToken) {
-      const msg = logicalErr ?? "oauth_exchange_failed";
-      return NextResponse.redirect(addMsg("/", `oauth_exchange_failed:${msg}`));
+      const reason = logicalError || (rawText ? `raw:${rawText.slice(0, 120)}` : "no_refresh_token");
+      return NextResponse.redirect(addMsg("/", `oauth_exchange_failed:${reason}`));
     }
 
     const isProd = process.env.NODE_ENV === "production";
     const res = NextResponse.redirect(addMsg("/", "connected"));
 
-    // Cookie refresh token (long)
     res.cookies.set("tt_refresh", refreshToken, {
       httpOnly: true,
       secure: isProd,
@@ -111,7 +125,6 @@ export async function GET(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
 
-    // Cookie access token (court)
     if (accessToken) {
       res.cookies.set("tt_access", accessToken, {
         httpOnly: true,
@@ -122,19 +135,14 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Clean des temporaires
+    // nettoyage
     res.cookies.set("tt_pkce", "", { path: "/", maxAge: 0 });
     res.cookies.set("tt_state", "", { path: "/", maxAge: 0 });
 
     return res;
-  } catch {
-    return NextResponse.redirect(addMsg("/", "oauth_network_error"));
+  } catch (err) {
+    // on ne laisse jamais fuiter une exception → redirection contrôlée
+    const msg = err instanceof Error ? err.message : "unknown";
+    return NextResponse.redirect(addMsg("/", `oauth_network_error:${msg}`));
   }
-}
-
-function addMsg(base: string, msg: string) {
-  // URL relative (redirige vers la home avec ?tiktok=...)
-  const u = new URL(base, "http://dummy");
-  u.searchParams.set("tiktok", msg);
-  return u.pathname + u.search;
 }
