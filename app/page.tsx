@@ -313,11 +313,11 @@ function TikTokGrid() {
 function SocialWall() {
   // Placeholder cards; later, replace with normalized social embeds
   return (
-    <section className="bg-background/50">
+    <section id="social" className="bg-background/50">
       <div className="mx-auto max-w-6xl px-4 py-16">
         <div className="flex items-end justify-between">
           <h2 className="text-2xl md:text-3xl font-semibold">En ce moment</h2>
-          <Link href="/social" className="text-sm underline text-gold hover:no-underline">Tout le flux</Link>
+          <Link href="#social" prefetch={false} className="text-sm underline text-gold hover:no-underline">Tout le flux</Link>
         </div>
         <div className="mt-8">
           <TikTokGrid />
