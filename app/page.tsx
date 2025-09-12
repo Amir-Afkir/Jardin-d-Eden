@@ -17,7 +17,6 @@ declare global {
 export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Header />
       <main>
         <Hero />
         <TrustBar />
@@ -30,34 +29,10 @@ export default function Home() {
         <Testimonials />
         <ContactCTA />
       </main>
-      <Footer />
-      <MobileStickyCTA />
     </div>
   );
 }
 
-function Header() {
-  return (
-    <header className="sticky top-0 z-40 backdrop-blur bg-background/70 border-b border-white/10">
-      <div className="mx-auto max-w-6xl px-4 py-0 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="relative inline-block h-20 w-20">
-            <Image src="/logo-jardin-eden.jpeg" alt="Jardin d’Eden" fill className="object-contain" />
-          </span>
-          <span className="text-lg font-semibold tracking-tight text-gold">  </span>
-        </Link> 
-        <nav className="hidden md:flex items-center gap-6 text-sm">
-          <a href="#services" className="hover:text-gold transition-colors">Services</a>
-          <a href="#projets" className="hover:text-gold transition-colors">Réalisations</a>
-          <a href="#process" className="hover:text-gold transition-colors">Process</a>
-          <a href="#zone" className="hover:text-gold transition-colors">Zone</a>
-          <a href="#contact" className="hover:text-gold transition-colors">Contact</a>
-          <Link href="#contact" className="rounded-full bg-brand hover:bg-brand-600 text-black px-4 py-2 font-medium transition-colors">Devis gratuit</Link>
-        </nav>
-      </div>
-    </header>
-  );
-}
 
 function Hero() {
   return (
@@ -586,34 +561,4 @@ function ContactCTA() {
   );
 }
 
-function Footer() {
-  return (
-    <footer className="border-t border-white/10">
-      <div className="mx-auto max-w-6xl px-4 py-10 text-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <div className="font-semibold text-gold">Jardin d’Eden</div>
-          <div>SIRET 940 465 297 00015</div>
-          <div>Orléans & alentours</div>
-        </div>
-        <nav className="flex gap-4">
-          <Link href="#services" className="hover:text-gold transition-colors">Services</Link>
-          <Link href="#projets" className="hover:text-gold transition-colors">Réalisations</Link>
-          <Link href="#process" className="hover:text-gold transition-colors">Process</Link>
-          <Link href="#zone" className="hover:text-gold transition-colors">Zone</Link>
-          <Link href="#contact" className="hover:text-gold transition-colors">Contact</Link>
-        </nav>
-        <div className="text-foreground/60">© {new Date().getFullYear()} Jardin d’Eden</div>
-      </div>
-    </footer>
-  );
-}
 
-function MobileStickyCTA() {
-  return (
-    <div className="fixed bottom-4 left-0 right-0 z-40 md:hidden px-4">
-      <Link href="#contact" className="block rounded-full bg-brand hover:bg-brand-600 text-black text-center py-3 font-medium shadow-lg transition-colors">
-        Demander un devis
-      </Link>
-    </div>
-  );
-}
