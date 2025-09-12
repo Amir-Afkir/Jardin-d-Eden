@@ -7,31 +7,35 @@ export const dynamic = "force-dynamic";
 const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 const LIST_URL  = "https://open.tiktokapis.com/v2/video/list/";
 
-/** ——— Types ——— */
-type OAuthError = { message?: string; code?: number };
-type RefreshWrapped = { data?: { access_token?: string }; error?: OAuthError; message?: string };
-type RefreshFlat = { access_token?: string; error?: OAuthError; message?: string };
-type RefreshResp = RefreshWrapped | RefreshFlat;
+type TikTokAuthor = {
+  unique_id?: string;
+  username?: string;
+  display_name?: string;
+  open_id?: string;
+};
 
 type TikTokVideo = {
   id: string;
-  author?: { unique_id?: string };
   cover_image_url?: string;
+  embed_link?: string;
+  share_url?: string;
+  author?: TikTokAuthor;
 };
-type TikTokListResponse = { data?: { videos?: TikTokVideo[] } };
 
-/** ——— Helpers ——— */
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === "object" && v !== null;
+type TikTokListResponse = {
+  data?: { videos?: TikTokVideo[]; cursor?: number; has_more?: boolean };
+  error?: { message?: string };
+  message?: string;
+};
 
-function extractAccessTokenFromRefresh(resp: RefreshResp): string | undefined {
-  if ("data" in resp && isRecord(resp.data)) {
-    return resp.data.access_token;
-  }
-  return (resp as RefreshFlat).access_token;
+type TokenResponseShape =
+  | { data?: { access_token?: string } }
+  | { access_token?: string };
+
+function pickAccessToken(j: TokenResponseShape): string | undefined {
+  return (j as any)?.data?.access_token ?? (j as any)?.access_token;
 }
 
-/** ——— Refresh ——— */
 async function refreshAccessToken(refreshToken: string): Promise<string> {
   const body = new URLSearchParams({
     client_key: process.env.TIKTOK_CLIENT_KEY!,
@@ -50,20 +54,12 @@ async function refreshAccessToken(refreshToken: string): Promise<string> {
     cache: "no-store",
   });
 
-  const j = (await r.json()) as RefreshResp;
-  const token = extractAccessTokenFromRefresh(j);
-
-  if (!token) {
-    const msg =
-      (isRecord(j.error) ? j.error.message : undefined) ||
-      (isRecord(j) && typeof j.message === "string" ? j.message : undefined) ||
-      "no_access_token_in_refresh";
-    throw new Error(`Cannot refresh access_token:${msg}`);
-  }
+  const j = (await r.json()) as TokenResponseShape;
+  const token = pickAccessToken(j);
+  if (!token) throw new Error("Cannot refresh access_token");
   return token;
 }
 
-/** ——— Handler ——— */
 export async function GET(req: NextRequest) {
   const refreshToken = req.cookies.get("tt_refresh")?.value || "";
   if (!refreshToken) {
@@ -82,19 +78,40 @@ export async function GET(req: NextRequest) {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ max_count: 9 }),
+      body: JSON.stringify({
+        max_count: 9,
+        cursor: 0,
+        fields: [
+          "id",
+          "cover_image_url",
+          "embed_link",
+          "share_url",
+          "author{unique_id,username,display_name,open_id}",
+        ],
+      }),
       cache: "no-store",
     });
 
     const data = (await r.json()) as TikTokListResponse;
+    const videos = data?.data?.videos ?? [];
 
-    const items = (data?.data?.videos ?? []).map((v) => ({
-      id: v.id,
-      url: `https://www.tiktok.com/@${v.author?.unique_id}/video/${v.id}`,
-      cover: v.cover_image_url,
-    }));
+    const items = videos.map((v) => {
+      const username = v.author?.unique_id || v.author?.username || "";
+      const url =
+        v.embed_link ||
+        v.share_url ||
+        (username ? `https://www.tiktok.com/@${username}/video/${v.id}` : `https://www.tiktok.com/@/video/${v.id}`);
+      return { id: v.id, url, cover: v.cover_image_url };
+    });
 
-    return NextResponse.json({ items, auth: true });
+    const payload: Record<string, unknown> = { items, auth: true };
+    if (!items.length) {
+      payload.hint =
+        "Aucune vidéo renvoyée par l’API. Vérifie que le compte autorisé possède des vidéos publiques et qu’il est bien ajouté comme testeur Sandbox.";
+      payload.raw_has_more = data?.data?.has_more ?? false;
+    }
+
+    return NextResponse.json(payload);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "unknown_error";
     return NextResponse.json({ items: [], auth: false, error: msg }, { status: 500 });
