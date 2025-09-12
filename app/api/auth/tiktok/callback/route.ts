@@ -4,13 +4,11 @@ import { NextResponse, NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type TikTokTokenOK = {
-  data?: { refresh_token?: string; access_token?: string };
-  error?: { message?: string };
-  message?: string;
-};
+type TokenShape =
+  | { data?: { refresh_token?: string; access_token?: string }; error?: { message?: string }; message?: string }
+  | { refresh_token?: string; access_token?: string; error?: { message?: string }; message?: string };
 
-const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
+const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"; // ← endpoint unifié
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -21,31 +19,17 @@ export async function GET(req: NextRequest) {
   const expectedState = req.cookies.get("tt_state")?.value;
   const pkce = req.cookies.get("tt_pkce")?.value;
 
-  // 1) garde-fous OAuth
-  if (oauthError) return diag("oauth_error:" + oauthError, 400);
-  if (!code) return diag("missing_code_in_query", 400);
+  if (oauthError) return NextResponse.redirect(addMsg("/", `oauth_error:${oauthError}`));
+  if (!code) return NextResponse.redirect(addMsg("/", "no_code"));
   if (expectedState && returnedState && expectedState !== returnedState) {
-    return diag("oauth_state_mismatch", 400);
+    return NextResponse.redirect(addMsg("/", "oauth_state_mismatch"));
   }
-  if (!pkce) return diag("missing_pkce_verifier_cookie", 400);
+  if (!pkce) return NextResponse.redirect(addMsg("/", "missing_pkce_verifier"));
 
-  // 2) env vars
-  const clientKey = process.env.TIKTOK_CLIENT_KEY;
-  const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
-  const redirectUri = process.env.TIKTOK_REDIRECT_URI;
+  const clientKey = process.env.TIKTOK_CLIENT_KEY!;
+  const clientSecret = process.env.TIKTOK_CLIENT_SECRET!;
+  const redirectUri = process.env.TIKTOK_REDIRECT_URI!;
 
-  if (!clientKey || !clientSecret || !redirectUri) {
-    return diag(
-      `missing_env: ${
-        !clientKey ? "TIKTOK_CLIENT_KEY " : ""
-      }${!clientSecret ? "TIKTOK_CLIENT_SECRET " : ""}${
-        !redirectUri ? "TIKTOK_REDIRECT_URI" : ""
-      }`,
-      500
-    );
-  }
-
-  // 3) échange code → token
   const body = new URLSearchParams({
     client_key: clientKey,
     client_secret: clientSecret,
@@ -55,10 +39,7 @@ export async function GET(req: NextRequest) {
     code_verifier: pkce,
   });
 
-  let status = 0;
-  let text = "";
-  let json: TikTokTokenOK | undefined;
-
+  let json: TokenShape;
   try {
     const r = await fetch(TOKEN_URL, {
       method: "POST",
@@ -69,82 +50,58 @@ export async function GET(req: NextRequest) {
       body,
       cache: "no-store",
     });
-    status = r.status;
-    text = await r.text();
-    try {
-      json = JSON.parse(text) as TikTokTokenOK;
-    } catch {
-      /* texte brut */
+
+    // TikTok peut renvoyer 200 même en cas d'erreur logique ; on vérifie le contenu.
+    json = (await r.json()) as TokenShape;
+
+    const refreshToken =
+      (json as any)?.data?.refresh_token ?? (json as any)?.refresh_token ?? null;
+    const accessToken =
+      (json as any)?.data?.access_token ?? (json as any)?.access_token ?? null;
+
+    if (!refreshToken) {
+      const msg =
+        (json as any)?.error?.message ||
+        (json as any)?.message ||
+        "oauth_exchange_failed";
+      return NextResponse.redirect(addMsg("/", `oauth_exchange_failed:${msg}`));
     }
-  } catch (e) {
-    return diag("oauth_network_error:" + (e as Error).message, 502);
-  }
 
-  // 4) analyse réponse
-  const refresh = json?.data?.refresh_token;
-  const access = json?.data?.access_token;
-  const apiError = json?.error?.message || json?.message;
+    const isProd = process.env.NODE_ENV === "production";
+    const res = NextResponse.redirect(addMsg("/", "connected"));
 
-  if (status < 200 || status >= 300 || !refresh) {
-    // on affiche ce que TikTok a réellement renvoyé
-    return diag(
-      `oauth_exchange_failed status=${status} message=${apiError ?? "n/a"} body=${truncate(
-        text,
-        600
-      )}`,
-      502
-    );
-  }
-
-  // 5) succès → set cookies + redirect
-  const isProd = process.env.NODE_ENV === "production";
-  const res = NextResponse.redirect("/?tiktok=connected");
-
-  res.cookies.set("tt_refresh", refresh, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
-  if (access) {
-    res.cookies.set("tt_access", access, {
+    // Cookie refresh token (longue durée)
+    res.cookies.set("tt_refresh", refreshToken as string, {
       httpOnly: true,
       secure: isProd,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 2,
+      maxAge: 60 * 60 * 24 * 30, // 30 jours
     });
+
+    // Cookie access token (optionnel, courte durée)
+    if (accessToken) {
+      res.cookies.set("tt_access", accessToken as string, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 2, // 2 h
+      });
+    }
+
+    // Nettoyage des cookies temporaires
+    res.cookies.set("tt_pkce", "", { path: "/", maxAge: 0 });
+    res.cookies.set("tt_state", "", { path: "/", maxAge: 0 });
+
+    return res;
+  } catch {
+    return NextResponse.redirect(addMsg("/", "oauth_network_error"));
   }
-  // clean temp cookies
-  res.cookies.set("tt_pkce", "", { path: "/", maxAge: 0 });
-  res.cookies.set("tt_state", "", { path: "/", maxAge: 0 });
-
-  return res;
 }
 
-// — helpers —
-
-function truncate(s: string, n: number) {
-  return s.length > n ? s.slice(0, n) + "…[truncated]" : s;
-}
-
-function htmlEscape(s: string) {
-  return s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]!));
-}
-
-// renvoie une petite page HTML lisible (pas un 500 opaque)
-function diag(msg: string, status = 500) {
-  const body = `<!doctype html>
-<meta charset="utf-8">
-<title>TikTok OAuth callback</title>
-<style>
-  body{font:14px/1.4 ui-sans-serif,system-ui; padding:24px; color:#e6e6e6; background:#0b0b0b}
-  code{background:#111; padding:2px 6px; border-radius:6px}
-  a{color:#ffd66e}
-</style>
-<h1>Callback TikTok</h1>
-<p><strong>Erreur:</strong> <code>${htmlEscape(msg)}</code></p>
-<p><a href="/">Retour à l’accueil</a></p>`;
-  return new Response(body, { status, headers: { "Content-Type": "text/html; charset=utf-8" } });
+function addMsg(base: string, msg: string) {
+  const u = new URL(base, "http://dummy");
+  u.searchParams.set("tiktok", msg);
+  return u.pathname + u.search;
 }
