@@ -7,11 +7,11 @@ export const dynamic = "force-dynamic";
 const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 const LIST_URL  = "https://open.tiktokapis.com/v2/video/list/";
 
-type TikTokAuthor = {
-  unique_id?: string;
-  username?: string;
-  display_name?: string;
-  open_id?: string;
+type TikTokTokenResp = {
+  data?: { access_token?: string };
+  access_token?: string;
+  error?: { message?: string };
+  message?: string;
 };
 
 type TikTokVideo = {
@@ -19,30 +19,18 @@ type TikTokVideo = {
   cover_image_url?: string;
   embed_link?: string;
   share_url?: string;
-  author?: TikTokAuthor;
+  author?: {
+    unique_id?: string;
+    username?: string;
+    display_name?: string;
+  };
 };
 
 type TikTokListResponse = {
-  data?: { videos?: TikTokVideo[]; cursor?: number; has_more?: boolean };
+  data?: { videos?: TikTokVideo[]; has_more?: boolean };
   error?: { message?: string };
   message?: string;
 };
-
-type TokenResponseShape = unknown;
-
-function pickAccessToken(j: TokenResponseShape): string | undefined {
-  if (j && typeof j === "object") {
-    const root = j as Record<string, unknown>;
-    const data = root["data"];
-    if (data && typeof data === "object") {
-      const access = (data as Record<string, unknown>)["access_token"];
-      if (typeof access === "string") return access;
-    }
-    const access2 = root["access_token"];
-    if (typeof access2 === "string") return access2;
-  }
-  return undefined;
-}
 
 async function refreshAccessToken(refreshToken: string): Promise<string> {
   const body = new URLSearchParams({
@@ -62,14 +50,17 @@ async function refreshAccessToken(refreshToken: string): Promise<string> {
     cache: "no-store",
   });
 
-  const j = (await r.json()) as TokenResponseShape;
-  const token = pickAccessToken(j);
-  if (!token) throw new Error("Cannot refresh access_token");
+  const j = (await r.json()) as TikTokTokenResp;
+  const token = j?.data?.access_token ?? j?.access_token;
+  if (!token) {
+    const msg = j?.error?.message || j?.message || "Cannot refresh access_token";
+    throw new Error(msg);
+  }
   return token;
 }
 
 export async function GET(req: NextRequest) {
-  const refreshToken = req.cookies.get("tt_refresh")?.value || "";
+  const refreshToken = req.cookies.get("tt_refresh")?.value;
   if (!refreshToken) {
     return NextResponse.json(
       { items: [], auth: false, message: "Connect TikTok at /api/auth/tiktok" },
@@ -80,6 +71,7 @@ export async function GET(req: NextRequest) {
   try {
     const accessToken = await refreshAccessToken(refreshToken);
 
+    // IMPORTANT : demander des fields pour récupérer l'auteur et pouvoir fabriquer l'URL
     const r = await fetch(LIST_URL, {
       method: "POST",
       headers: {
@@ -88,38 +80,35 @@ export async function GET(req: NextRequest) {
       },
       body: JSON.stringify({
         max_count: 9,
-        cursor: 0,
         fields: [
           "id",
           "cover_image_url",
           "embed_link",
           "share_url",
-          "author{unique_id,username,display_name,open_id}",
+          "author{unique_id,username,display_name}",
         ],
       }),
       cache: "no-store",
     });
 
     const data = (await r.json()) as TikTokListResponse;
+
     const videos = data?.data?.videos ?? [];
 
+    // Fabrique une URL exploitable avec fallback si unique_id absent
     const items = videos.map((v) => {
-      const username = v.author?.unique_id || v.author?.username || "";
-      const url =
-        v.embed_link ||
-        v.share_url ||
-        (username ? `https://www.tiktok.com/@${username}/video/${v.id}` : `https://www.tiktok.com/@/video/${v.id}`);
+      const unique = v.author?.unique_id;
+      const urlFromAuthor = unique ? `https://www.tiktok.com/@${unique}/video/${v.id}` : undefined;
+      const url = urlFromAuthor || v.share_url || v.embed_link || "";
       return { id: v.id, url, cover: v.cover_image_url };
-    });
+    }).filter((i) => i.url); // on garde seulement celles qui ont une URL
 
-    const payload: Record<string, unknown> = { items, auth: true };
-    if (!items.length) {
-      payload.hint =
-        "Aucune vidéo renvoyée par l’API. Vérifie que le compte autorisé possède des vidéos publiques et qu’il est bien ajouté comme testeur Sandbox.";
-      payload.raw_has_more = data?.data?.has_more ?? false;
-    }
+    const hint =
+      items.length === 0
+        ? "Aucune vidéo exploitable. Assure-toi que le compte a des vidéos PUBLIQUES et que l’utilisateur connecté est bien autorisé (Sandbox)."
+        : undefined;
 
-    return NextResponse.json(payload);
+    return NextResponse.json({ items, auth: true, hint, raw_has_more: Boolean(data?.data?.has_more) });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "unknown_error";
     return NextResponse.json({ items: [], auth: false, error: msg }, { status: 500 });
