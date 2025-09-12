@@ -11,28 +11,43 @@ type TokenResp = TokenWrapped | TokenFlat;
 
 const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+// Type guard util
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null;
+
+const getField = (obj: unknown, key: string): unknown =>
+  isRecord(obj) ? (obj as Record<string, unknown>)[key] : undefined;
 
 function extractTokens(resp: TokenResp) {
   let refreshToken: string | undefined;
   let accessToken: string | undefined;
   let logicalError: string | undefined;
 
-  // chemin imbriqué
-  if (isRecord(resp) && isRecord((resp as any).data)) {
-    const d = (resp as any).data as Record<string, unknown>;
-    if (typeof d.refresh_token === "string") refreshToken = d.refresh_token;
-    if (typeof d.access_token === "string") accessToken = d.access_token;
+  // chemin imbriqué: resp.data?.refresh_token / resp.data?.access_token
+  const dataObj = getField(resp, "data");
+  if (isRecord(dataObj)) {
+    const rt = getField(dataObj, "refresh_token");
+    const at = getField(dataObj, "access_token");
+    if (typeof rt === "string") refreshToken = rt;
+    if (typeof at === "string") accessToken = at;
   }
-  // chemin flat
+
+  // chemin flat: resp.refresh_token / resp.access_token
   if (!refreshToken || !accessToken) {
-    const root = resp as Record<string, unknown>;
-    if (!refreshToken && typeof root.refresh_token === "string") refreshToken = root.refresh_token;
-    if (!accessToken && typeof root.access_token === "string") accessToken = root.access_token;
+    const rt = getField(resp, "refresh_token");
+    const at = getField(resp, "access_token");
+    if (!refreshToken && typeof rt === "string") refreshToken = rt;
+    if (!accessToken && typeof at === "string") accessToken = at;
   }
-  // messages d'erreur
-  if (isRecord(resp?.error) && typeof resp.error!.message === "string") logicalError = resp.error!.message;
-  if (!logicalError && isRecord(resp) && typeof (resp as any).message === "string") logicalError = (resp as any).message;
+
+  // messages d'erreur éventuels
+  const errObj = getField(resp, "error");
+  if (isRecord(errObj)) {
+    const msg = getField(errObj, "message");
+    if (typeof msg === "string") logicalError = msg;
+  }
+  const flatMsg = getField(resp, "message");
+  if (!logicalError && typeof flatMsg === "string") logicalError = flatMsg;
 
   return { refreshToken, accessToken, logicalError };
 }
@@ -141,7 +156,6 @@ export async function GET(req: NextRequest) {
 
     return res;
   } catch (err) {
-    // on ne laisse jamais fuiter une exception → redirection contrôlée
     const msg = err instanceof Error ? err.message : "unknown";
     return NextResponse.redirect(addMsg("/", `oauth_network_error:${msg}`));
   }
