@@ -88,13 +88,17 @@ export async function GET(req: NextRequest) {
     const data = (await r.json()) as TikTokListResponse;
     const videos = data?.data?.videos ?? [];
 
-    // Construit une URL exploitable à partir de share_url puis embed_link
+    // Utilise en priorité l'URL de partage (ouvre la page TikTok),
+    // sinon le lien d'embed (player iframe). On expose les deux.
     const items = videos
       .map((v) => {
+        // Utilise en priorité l'URL de partage (ouvre la page TikTok),
+        // sinon le lien d'embed (player iframe). On expose les deux.
         const url = v.share_url || v.embed_link || "";
-        return { id: v.id, url, cover: v.cover_image_url };
+        const embed = v.embed_link || "";
+        return { id: v.id, url, embed, cover: v.cover_image_url };
       })
-      .filter((i) => i.url);
+      .filter((i) => i.url || i.embed);
 
     const hint =
       items.length === 0

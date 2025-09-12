@@ -233,7 +233,7 @@ function Process() {
 }
 
 function TikTokGrid() {
-  const [items, setItems] = useState<{ id: string; url: string; cover?: string }[]>([]);
+  const [items, setItems] = useState<{ id: string; url: string; embed?: string; cover?: string }[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -244,7 +244,7 @@ function TikTokGrid() {
       try {
         const r = await fetch("/api/tiktok", { cache: "no-store", credentials: "include" });
         const status = r.status;
-        const j: { items?: { id: string; url: string; cover?: string }[]; error?: string } = await r.json();
+        const j: { items?: { id: string; url: string; embed?: string; cover?: string }[]; error?: string } = await r.json();
 
         if (!r.ok) {
           const msg = j?.error || (status === 401 ? "not_connected" : "fetch_failed");
@@ -276,8 +276,8 @@ function TikTokGrid() {
 
   return (
     <>
-      {/* Ne charge le script d’embed que s’il y a des items */}
-      {items.length > 0 && (
+      {/* Ne charge le script d’embed que s’il y a des items sans embed */}
+      {items.some((i) => !i.embed) && (
         <Script src="https://www.tiktok.com/embed.js" strategy="afterInteractive" />
       )}
 
@@ -293,17 +293,30 @@ function TikTokGrid() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {items.map(({ id, url }) => (
-          <blockquote
-            key={id}
-            className="tiktok-embed"
-            cite={url}
-            style={{ maxWidth: "100%", minWidth: "260px" }}
-          >
-            <section>
-              <a target="_blank" rel="nofollow noopener noreferrer" href={url}>{url}</a>
-            </section>
-          </blockquote>
+        {items.map(({ id, url, embed, cover }) => (
+          embed ? (
+            <iframe
+              key={id}
+              src={embed}
+              allow="autoplay; fullscreen; picture-in-picture"
+              loading="lazy"
+              style={{ width: "100%", aspectRatio: "9 / 16", border: 0, borderRadius: 12 }}
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          ) : (
+            <blockquote
+              key={id}
+              className="tiktok-embed"
+              cite={url}
+              style={{ maxWidth: "100%", minWidth: 260 }}
+            >
+              <section>
+                <a target="_blank" rel="nofollow noopener noreferrer" href={url}>
+                  {url}
+                </a>
+              </section>
+            </blockquote>
+          )
         ))}
       </div>
     </>
