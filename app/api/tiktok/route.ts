@@ -4,7 +4,7 @@ import { NextResponse, NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const TOKEN_URL = "https://open-api.tiktokglobalplatform.com/v2/oauth/token/";
+const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 const LIST_URL  = "https://open.tiktokapis.com/v2/video/list/";
 
 type TikTokVideo = {
@@ -24,7 +24,10 @@ async function refreshAccessToken(refreshToken: string): Promise<string> {
 
   const r = await fetch(TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "jardin-eden-oauth/1.0",
+    },
     body,
     cache: "no-store",
   });

@@ -10,7 +10,7 @@ type TikTokTokenOK = {
   message?: string;
 };
 
-const TOKEN_URL = "https://open-api.tiktokglobalplatform.com/v2/oauth/token/";
+const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -62,7 +62,10 @@ export async function GET(req: NextRequest) {
   try {
     const r = await fetch(TOKEN_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "jardin-eden-oauth/1.0",
+      },
       body,
       cache: "no-store",
     });
