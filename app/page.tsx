@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Script from "next/script";
+import ReviewsGoogle from "../app/components/ReviewsGoogle";
 
 import { useEffect, useState, useRef } from "react";
 import type * as Mapbox from "mapbox-gl";
@@ -24,6 +25,7 @@ export default function Home() {
         <ProjectsTeaser />
         <BeforeAfter />
         <Process />
+        <ReviewsGoogle />
         <SocialWall />
         <Coverage />
         <Testimonials />
@@ -134,9 +136,9 @@ function Services() {
 
 function ProjectsTeaser() {
   const projects = [
-    { title: "Cour végétale, centre-ville", img: "/projects/p1.jpeg" },
-    { title: "Terrasse bois & bassin", img: "/projects/p2.jpeg" },
-    { title: "Jardin méditerranéen", img: "/projects/p3.jpeg" },
+    { title: "Allée lumineuse & jardin contemporain", img: "/projects/p1.jpeg" },
+    { title: "Espace détente au bord de piscine", img: "/projects/p2.jpeg" },
+    { title: "Équilibre pierres & végétation", img: "/projects/p3.jpeg" },
   ];
   return (
     <section id="projets" className="bg-background/50">
@@ -543,22 +545,203 @@ function Testimonials() {
 }
 
 function ContactCTA() {
+  const phoneE164: string | undefined = process.env.NEXT_PUBLIC_WHATSAPP_E164;
+  const hasPhone = !!phoneE164 && typeof phoneE164 === "string" && phoneE164.length > 0;
+
+  type FormState = { name: string; phone: string; city: string; service: string };
+  type Errors = { name?: string; phone?: string; city?: string; service?: string; general?: string };
+
+  const services: ReadonlyArray<{ value: string; label: string }> = [
+    { value: "gazon", label: "Gazon en rouleau" },
+    { value: "cloture", label: "Clôture" },
+    { value: "entretien", label: "Entretien" },
+    { value: "creation", label: "Création" },
+    { value: "pavage", label: "Pavage" },
+    { value: "arrosage", label: "Arrosage automatique" },
+    { value: "autre", label: "Autre" },
+  ];
+
+  const [form, setForm] = useState<FormState>({ name: "", phone: "", city: "", service: "gazon" });
+  const [errors, setErrors] = useState<Errors>({});
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [serverMsg, setServerMsg] = useState<string>("");
+  const [botField, setBotField] = useState<string>("");
+
+  async function sendEmail(data: FormState): Promise<boolean> {
+    try {
+      setIsSubmitting(true);
+      setServerMsg("");
+      const params = new URLSearchParams();
+      params.set("form-name", "contact");
+      params.set("name", data.name);
+      params.set("phone", data.phone);
+      params.set("city", data.city);
+      params.set("service", data.service);
+      // Honeypot (anti-spam)
+      params.set("bot-field", botField);
+
+      const res = await fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.toString(),
+      });
+
+      if (!res.ok) {
+        setServerMsg("Échec de l'envoi");
+        return false;
+      }
+      setServerMsg("Demande envoyée par email ✅");
+      return true;
+    } catch {
+      setServerMsg("Réseau indisponible — réessayez un peu plus tard.");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+
+  function validatePhoneFR(v: string): boolean {
+    // Autorise formats FR simples: 06XXXXXXXX, 07XXXXXXXX, avec ou sans espaces
+    const digits = v.replace(/\D/g, "");
+    return /^0[1-9]\d{8}$/.test(digits);
+  }
+
+  function handleChange<K extends keyof FormState>(key: K) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const value = e.target.value;
+      setForm((prev) => ({ ...prev, [key]: value }));
+      setErrors((prev) => ({ ...prev, [key]: undefined, general: undefined }));
+    };
+  }
+
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
+    e.preventDefault();
+
+    const newErrors: Errors = {};
+    if (!form.name.trim()) newErrors.name = "Nom requis";
+    if (!validatePhoneFR(form.phone)) newErrors.phone = "Téléphone invalide (format FR)";
+    if (!form.city.trim()) newErrors.city = "Ville requise";
+    if (!form.service) newErrors.service = "Choix requis";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    // 1) Essaie l'email (canal principal)
+    const ok = await sendEmail(form);
+    // setSubmitted(ok); // removed as per instructions
+    // WhatsApp fallback removed
+  }
+
+  const defaultMsg: string = "Bonjour, je souhaite un devis pour l'aménagement de mon jardin.";
+  const waUrl: string | undefined = hasPhone
+    ? `https://wa.me/${phoneE164}?text=${encodeURIComponent(defaultMsg)}`
+    : undefined;
   return (
     <section id="contact" className="relative overflow-hidden">
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-brand via-brand-600 to-taupe" />
       <div className="mx-auto max-w-6xl px-4 py-16 md:py-20 text-cream">
         <h2 className="text-2xl md:text-3xl font-semibold">Votre projet commence ici</h2>
         <p className="mt-2 text-cream/90 max-w-2xl">Décrivez-nous votre extérieur en 30 secondes. On vous rappelle rapidement.</p>
-        <form className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3">
-          <input className="rounded-lg bg-cream text-black px-4 py-3 placeholder-black/60" placeholder="Nom" />
-          <input className="rounded-lg bg-cream text-black px-4 py-3 placeholder-black/60" placeholder="Téléphone" />
-          <input className="rounded-lg bg-cream text-black px-4 py-3 placeholder-black/60" placeholder="Ville" />
-          <button className="rounded-lg bg-black text-cream px-4 py-3 font-medium hover:opacity-90">Demander un devis</button>
+        <form
+          name="contact"
+          method="POST"
+          data-netlify="true"
+          data-netlify-honeypot="bot-field"
+          onSubmit={onSubmit}
+          className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-3"
+          aria-busy={isSubmitting}
+        >
+          {/* Netlify Forms hidden fields */}
+          <input type="hidden" name="form-name" value="contact" />
+          <input
+            type="text"
+            name="bot-field"
+            className="hidden"
+            tabIndex={-1}
+            autoComplete="off"
+            onChange={(e) => setBotField(e.target.value)}
+            aria-hidden="true"
+          />
+          <input
+            name="name"
+            className="rounded-lg bg-cream text-black px-4 py-3 placeholder-black/60"
+            placeholder="Nom"
+            value={form.name}
+            onChange={handleChange("name")}
+            aria-invalid={Boolean(errors.name)}
+            aria-describedby={errors.name ? "err-name" : undefined}
+          />
+          <input
+            name="phone"
+            className="rounded-lg bg-cream text-black px-4 py-3 placeholder-black/60"
+            placeholder="Téléphone"
+            value={form.phone}
+            onChange={handleChange("phone")}
+            inputMode="tel"
+            aria-invalid={Boolean(errors.phone)}
+            aria-describedby={errors.phone ? "err-phone" : undefined}
+          />
+          <input
+            name="city"
+            className="rounded-lg bg-cream text-black px-4 py-3 placeholder-black/60"
+            placeholder="Ville"
+            value={form.city}
+            onChange={handleChange("city")}
+            aria-invalid={Boolean(errors.city)}
+            aria-describedby={errors.city ? "err-city" : undefined}
+          />
+          <select
+            name="service"
+            className="rounded-lg bg-cream text-black px-4 py-3"
+            value={form.service}
+            onChange={handleChange("service")}
+            aria-invalid={Boolean(errors.service)}
+            aria-describedby={errors.service ? "err-service" : undefined}
+          >
+            {services.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="rounded-lg bg-black text-cream px-4 py-3 font-medium hover:opacity-90 disabled:opacity-60"
+            disabled={isSubmitting}
+            aria-disabled={isSubmitting}
+          >
+            {isSubmitting ? "Envoi en cours…" : "Demander un devis"}
+          </button>
         </form>
-        <p className="mt-2 text-sm text-cream/90">Ou sur WhatsApp : <a href="https://wa.me/" className="underline underline-offset-4">ouvrir la conversation</a></p>
+        {errors.general && (
+          <div className="mt-2 text-xs text-cream/90" role="alert">{errors.general}</div>
+        )}
+        {errors.name && (
+          <div id="err-name" className="mt-1 text-xs text-red-300">{errors.name}</div>
+        )}
+        {errors.phone && (
+          <div id="err-phone" className="mt-1 text-xs text-red-300">{errors.phone}</div>
+        )}
+        {errors.city && (
+          <div id="err-city" className="mt-1 text-xs text-red-300">{errors.city}</div>
+        )}
+        {errors.service && (
+          <div id="err-service" className="mt-1 text-xs text-red-300">{errors.service}</div>
+        )}
+        <div className="mt-2 text-sm" aria-live="polite">
+          {serverMsg && <div className="text-cream/90">{serverMsg}</div>}
+        </div>
+        <p className="mt-2 text-sm text-cream/90">
+          Ou sur WhatsApp:{" "}
+          {waUrl ? (
+            <a href={waUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">ouvrir la conversation</a>
+          ) : (
+            <span className="opacity-80">(ajoutez NEXT_PUBLIC_WHATSAPP_E164 pour activer WhatsApp)</span>
+          )}
+        </p>
       </div>
     </section>
   );
 }
-
-

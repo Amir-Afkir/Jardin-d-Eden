@@ -25,7 +25,7 @@ export default function Header() {
         <Link href="/" className="flex items-center gap-2">
           <span className="relative inline-block h-20 w-20">
             <Image
-              src="/logo-jardin-eden.jpeg"
+              src="/logo.svg"
               alt="Jardin d’Eden"
               fill
               className="object-contain"
