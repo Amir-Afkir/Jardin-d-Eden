@@ -1,9 +1,9 @@
-"use client";
+'use client';
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Script from "next/script";
-import ReviewsGoogle from "../app/components/ReviewsGoogle";
+import ReviewsGoogle from "./components/ReviewsGoogle";
 
 import { useEffect, useState, useRef } from "react";
 import type * as Mapbox from "mapbox-gl";
@@ -631,7 +631,7 @@ function ContactCTA() {
     }
 
     // 1) Essaie l'email (canal principal)
-    const ok = await sendEmail(form);
+    await sendEmail(form);
     // setSubmitted(ok); // removed as per instructions
     // WhatsApp fallback removed
   }
