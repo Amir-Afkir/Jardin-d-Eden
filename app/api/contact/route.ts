@@ -29,12 +29,11 @@ export async function POST(req: Request) {
     const body = bodyUnknown;
 
     const apiKey = process.env.RESEND_API_KEY;
-    const emailTo = process.env.EMAIL_TO ?? "lejardindeden.orleans@gmail.com";
-    const emailFrom = process.env.EMAIL_FROM ?? "onboarding@resend.dev"; // à remplacer après vérif domaine
+    const emailTo = process.env.EMAIL_TO;
+    const emailFrom = process.env.EMAIL_FROM;
 
-    if (!apiKey) {
-      // Ne pas planter le build : on renvoie une 500 à l’exécution seulement
-      return NextResponse.json({ error: "missing_RESEND_API_KEY" }, { status: 500 });
+    if (!apiKey || !emailTo || !emailFrom) {
+      return NextResponse.json({ error: "missing_email_env" }, { status: 500 });
     }
 
     // ✅ Instanciation *dans* le handler, quand la clé est dispo à l’exécution
@@ -49,8 +48,8 @@ export async function POST(req: Request) {
     `;
 
     const { error } = await resend.emails.send({
-      from: emailFrom,
-      to: emailTo,
+      from: emailFrom as string,
+      to: emailTo as string,
       subject: "Demande de devis - Jardin d’Eden",
       html: emailHtml,
     });
