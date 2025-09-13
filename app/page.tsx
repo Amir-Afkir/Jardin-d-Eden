@@ -565,29 +565,29 @@ function ContactCTA() {
   const [errors, setErrors] = useState<Errors>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [serverMsg, setServerMsg] = useState<string>("");
-  const [botField, setBotField] = useState<string>("");
 
   async function sendEmail(data: FormState): Promise<boolean> {
     try {
       setIsSubmitting(true);
       setServerMsg("");
-      const params = new URLSearchParams();
-      params.set("form-name", "contact");
-      params.set("name", data.name);
-      params.set("phone", data.phone);
-      params.set("city", data.city);
-      params.set("service", data.service);
-      // Honeypot (anti-spam)
-      params.set("bot-field", botField);
-
-      const res = await fetch("/", {
+      const res = await fetch("/api/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params.toString(),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
-
       if (!res.ok) {
-        setServerMsg("Échec de l'envoi");
+        // tente d'extraire un message d'erreur lisible
+        let detail = "";
+        try {
+          const j: unknown = await res.json();
+          if (j && typeof j === "object" && "error" in (j as Record<string, unknown>)) {
+            const msg = (j as Record<string, unknown>).error;
+            if (typeof msg === "string" && msg.trim().length > 0) detail = ` — ${msg}`;
+          }
+        } catch {
+          // ignore
+        }
+        setServerMsg(`Échec de l'envoi${detail}`);
         return false;
       }
       setServerMsg("Demande envoyée par email ✅");
@@ -599,7 +599,6 @@ function ContactCTA() {
       setIsSubmitting(false);
     }
   }
-
 
   function validatePhoneFR(v: string): boolean {
     // Autorise formats FR simples: 06XXXXXXXX, 07XXXXXXXX, avec ou sans espaces
@@ -615,7 +614,6 @@ function ContactCTA() {
     };
   }
 
-
   async function onSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
 
@@ -630,16 +628,15 @@ function ContactCTA() {
       return;
     }
 
-    // 1) Essaie l'email (canal principal)
+    // Canal principal : API email
     await sendEmail(form);
-    // setSubmitted(ok); // removed as per instructions
-    // WhatsApp fallback removed
   }
 
   const defaultMsg: string = "Bonjour, je souhaite un devis pour l'aménagement de mon jardin.";
   const waUrl: string | undefined = hasPhone
     ? `https://wa.me/${phoneE164}?text=${encodeURIComponent(defaultMsg)}`
     : undefined;
+
   return (
     <section id="contact" className="relative overflow-hidden">
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-brand via-brand-600 to-taupe" />
@@ -647,25 +644,10 @@ function ContactCTA() {
         <h2 className="text-2xl md:text-3xl font-semibold">Votre projet commence ici</h2>
         <p className="mt-2 text-cream/90 max-w-2xl">Décrivez-nous votre extérieur en 30 secondes. On vous rappelle rapidement.</p>
         <form
-          name="contact"
-          method="POST"
-          data-netlify="true"
-          data-netlify-honeypot="bot-field"
           onSubmit={onSubmit}
           className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-3"
           aria-busy={isSubmitting}
         >
-          {/* Netlify Forms hidden fields */}
-          <input type="hidden" name="form-name" value="contact" />
-          <input
-            type="text"
-            name="bot-field"
-            className="hidden"
-            tabIndex={-1}
-            autoComplete="off"
-            onChange={(e) => setBotField(e.target.value)}
-            aria-hidden="true"
-          />
           <input
             name="name"
             className="rounded-lg bg-cream text-black px-4 py-3 placeholder-black/60"
