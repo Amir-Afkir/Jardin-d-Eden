@@ -1,3 +1,4 @@
+"use client";
 import { NextResponse } from "next/server";
 
 // Cache mémoire simple (12 h)
@@ -86,7 +87,7 @@ export async function GET() {
       const text = await r.text();
       return NextResponse.json({ error: "places_api_error", detail: text }, { status: r.status });
     }
- 
+
     const json: PlaceResponse = await r.json();
 
     // 3) Normalisation légère + limitation à 3–5 avis récents
