@@ -576,17 +576,17 @@ function ContactCTA() {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
+        // tente d'extraire un message d'erreur lisible
         let detail = "";
         try {
-          const j: any = await res.json();
-          const raw = j?.detail ?? j?.error;
-          if (typeof raw === "string" && raw.trim()) {
-            detail = ` — ${raw}`;
-          } else if (raw && typeof raw === "object") {
-            const msg = raw.message || JSON.stringify(raw);
-            detail = msg ? ` — ${msg}` : "";
+          const j: unknown = await res.json();
+          if (j && typeof j === "object" && "error" in (j as Record<string, unknown>)) {
+            const msg = (j as Record<string, unknown>).error;
+            if (typeof msg === "string" && msg.trim().length > 0) detail = ` — ${msg}`;
           }
-        } catch { /* ignore */ }
+        } catch {
+          // ignore
+        }
         setServerMsg(`Échec de l'envoi${detail}`);
         return false;
       }

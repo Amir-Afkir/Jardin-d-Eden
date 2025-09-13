@@ -55,12 +55,7 @@ export async function POST(req: Request) {
     });
 
     if (error) {
-    const message = (error as any)?.message || (error as Error)?.toString?.() || "email provider error";
-    console.error("[contact] Resend error:", error);
-    return NextResponse.json(
-        { error: "email_send_failed", detail: message },
-        { status: 502 }
-    );
+      return NextResponse.json({ error: String(error) }, { status: 502 });
     }
 
     return NextResponse.json({ ok: true });
