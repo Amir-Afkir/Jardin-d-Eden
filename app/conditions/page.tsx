@@ -9,7 +9,7 @@ const ConditionsPage = () => {
       <p className="mb-8 text-foreground/70">Dernière mise à jour : {currentDate}</p>
 
       <p className="mb-6 text-foreground">
-        Bienvenue sur Jardin d’Eden (<a href="https://jardindeden.netlify.app" className="text-blue-600 underline">https://jardindeden.netlify.app</a>).
+        Bienvenue sur Jardin d’Eden (<a href="https://jardindeden.netlify.app" className="text-gold underline">https://jardindeden.netlify.app</a>).
         En utilisant notre site ou nos services, vous acceptez les présentes conditions d’utilisation :
       </p>
 
