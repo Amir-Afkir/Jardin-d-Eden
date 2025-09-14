@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 
 const MentionsLegalesPage = () => {
   const currentDate = new Date().toLocaleDateString("fr-FR");
@@ -96,7 +97,7 @@ const MentionsLegalesPage = () => {
           <h2 className="text-xl md:text-2xl font-semibold text-gold mb-2">9. Contact</h2>
           <p className="text-foreground">
             Pour toute question relative aux mentions légales, vous pouvez utiliser notre{" "}
-            <a className="underline" href="/#contact">formulaire de contact</a>.
+            <Link className="underline" href="/#contact">formulaire de contact</Link>.
           </p>
         </div>
       </section>
