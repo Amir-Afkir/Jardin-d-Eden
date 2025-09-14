@@ -24,13 +24,6 @@ const MentionsLegalesPage = () => {
           <p className="text-foreground mt-2">
             <strong>Directeur de la publication :</strong> Touzani Mustapha (Président)
           </p>
-          <p className="text-foreground mt-2">
-            <strong>Contact :</strong>{" "}
-            <a className="underline" href="mailto:contact@jardindeden.example">contact@jardindeden.example</a>{" "}
-            / <span>+33&nbsp;X&nbsp;XX&nbsp;XX&nbsp;XX&nbsp;XX</span>
-            <br />
-            (Remplace l’email et le téléphone par tes coordonnées réelles)
-          </p>
         </div>
 
         {/* 2. Hébergeur */}
@@ -102,8 +95,8 @@ const MentionsLegalesPage = () => {
         <div>
           <h2 className="text-xl md:text-2xl font-semibold text-gold mb-2">9. Contact</h2>
           <p className="text-foreground">
-            Pour toute question relative aux mentions légales, vous pouvez nous écrire à{" "}
-            <a className="underline" href="mailto:contact@jardindeden.example">contact@jardindeden.example</a>.
+            Pour toute question relative aux mentions légales, vous pouvez utiliser notre{" "}
+            <a className="underline" href="/#contact">formulaire de contact</a>.
           </p>
         </div>
       </section>

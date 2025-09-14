@@ -37,73 +37,36 @@ export default function Home() {
 
 
 function Hero() {
-  // phase gère ce qui doit être visible (video -> image)
-  const [phase, setPhase] = useState<"video" | "image">("video");
-  const [imgReady, setImgReady] = useState<boolean>(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    // Respecte prefers-reduced-motion : affiche directement l'image
-    if (typeof window !== "undefined") {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-      if (reduce.matches) {
-        setPhase("image");
-        return;
-      }
-    }
-
-    const v = videoRef.current;
-    if (!v) return;
-
-    const handleEnded = (): void => setPhase("image");
-    v.addEventListener("ended", handleEnded);
-
-    // Tente l'autoplay. Si rejeté, on bascule sur l'image.
-    const maybe = v.play();
-    if (maybe && typeof (maybe as Promise<void>).catch === "function") {
-      (maybe as Promise<void>).catch(() => setPhase("image"));
-    }
-
-    return () => {
-      v.removeEventListener("ended", handleEnded);
-    };
-  }, []);
-
-  // Classes d'opacité avec transition douce
-  const videoOpacity = phase === "video" ? "opacity-100" : "opacity-0";
-  const imageOpacity = imgReady && phase === "image" ? "opacity-100" : "opacity-0";
-
   return (
     <section className="relative overflow-hidden">
-      {/* Calque média de fond */}
+      {/* Media de fond — IMAGE UNIQUEMENT */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        {/* VIDEO (toujours montée pour permettre le fondu) */}
-        <video
-          ref={videoRef}
-          className={`h-full w-full object-cover absolute inset-0 transition-opacity duration-700 ease-out ${videoOpacity}`}
-          autoPlay
-          muted
-          playsInline
-          preload="auto"
-          poster="/baniere.webp"
-        >
-          <source src="/baniere.webm" type="video/webm" />
-          <source src="/baniere.mp4" type="video/mp4" />
-        </video>
-
-        {/* IMAGE (préchargée puis fondu quand prête) */}
         <Image
           src="/baniere2.webp"
           alt="Jardin d'Eden — bannière"
           fill
           priority
           sizes="100vw"
-          className={`object-cover transition-opacity duration-700 ease-out ${imageOpacity}`}
-          onLoadingComplete={(): void => setImgReady(true)}
+          className="object-cover"
         />
-
         <div className="absolute inset-0 bg-black/35" />
       </div>
+
+      {/**
+       * VIDEO (commentée pour réintégration ultérieure)
+       *
+       * <video
+       *   className="h-full w-full object-cover absolute inset-0"
+       *   autoPlay
+       *   muted
+       *   playsInline
+       *   preload="auto"
+       *   poster="/baniere.webp"
+       * >
+       *   <source src="/baniere1.webm" type="video/webm" />
+       *   <source src="/baniere.mp4" type="video/mp4" />
+       * </video>
+       */}
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-28 md:py-40">
         <motion.h1
@@ -186,10 +149,13 @@ function Services() {
 
 function ProjectsTeaser() {
   const projects = [
-    { title: "Allée lumineuse & jardin contemporain", img: "/projects/p1.jpeg" },
-    { title: "Espace détente au bord de piscine", img: "/projects/p2.jpeg" },
+    { title: "Allée lumineuse & jardin contemporain", img: "/projects/p1.png" },
+    { title: "Espace détente au bord de piscine", img: "/projects/p2.png" },
     { title: "Équilibre pierres & végétation", img: "/projects/p3.jpeg" },
-  ];
+    { title: "Devanture élégante & arbre sculptural ", img: "/projects/p4.png" }, 
+    { title: "Entrée illuminée & palmiers exotiques", img: "/projects/p5.png" },
+    { title: "Massif arrondi & palmiers décoratifs", img: "/projects/p6.png" },
+  ]; 
   return (
     <section id="projets" className="bg-background/50">
       <div className="mx-auto max-w-6xl px-4 py-16">
@@ -232,7 +198,7 @@ function BeforeAfter() {
       </div>
     </section>
   );
-}
+} 
 
 function Process() {
   const steps = [
