@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import MobileStickyCTA from "./components/MobileStickyCTA";
 
 export const metadata: Metadata = {
   title: "Jardin d’Eden",
@@ -15,10 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background text-foreground">
         <Header />
         {/* réserve la hauteur du header fixe (~96px). Ajuste si ton header change */}
-        <main className="pt-24">{children}</main>
+        <main className="pt-28 md:pt-16">{children}</main>
         <Footer />
-        {/* Garde le CTA sous le header (z-40 < z-[9999]) */}
-        <MobileStickyCTA />
+        {/* Garde le CTA sous le header (z-40 < z-[9999]) */} 
       </body>
     </html>
   );

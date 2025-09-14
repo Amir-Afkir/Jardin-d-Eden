@@ -43,13 +43,36 @@ function Hero() {
       <div className="absolute inset-0 z-0 pointer-events-none">
         <Image
           src="/baniere2.webp"
-          alt="Jardin d'Eden — bannière"
+          alt=""
+          role="presentation"
           fill
           priority
-          sizes="100vw"
-          className="object-cover"
+          fetchPriority="high"
+          // Génère un srcset optimal sans servir plus large que nécessaire
+          sizes="(min-width: 1536px) 1536px, (min-width: 1280px) 1280px, 100vw"
+          // Placeholder très léger inline (évite d'ajouter un fichier dans /public)
+          placeholder="blur"
+          blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+          className="object-cover select-none [image-rendering:auto]"
+          draggable={false}
         />
         <div className="absolute inset-0 bg-black/35" />
+      </div>
+
+      {/* Logo signature bas-gauche (discret) */}
+      <div className="absolute bottom-5 left-5 z-10 pointer-events-none select-none max-[380px]:hidden">
+        <div className="relative w-18 h-18 md:w-26 md:h-26 rounded-full bg-black/60 backdrop-blur-sm ring-1 ring-white/20 shadow-lg overflow-hidden">
+          <Image
+            src="/logo.png"
+            alt="Le Jardin d’Eden"
+            fill
+            className="object-contain p-1"
+            sizes="(min-width: 768px) 96px, 64px"
+            priority={false}
+            aria-hidden="true"
+            role="presentation"
+          />
+        </div>
       </div>
 
       {/**
