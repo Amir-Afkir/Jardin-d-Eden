@@ -37,21 +37,71 @@ export default function Home() {
 
 
 function Hero() {
+  // phase gère ce qui doit être visible (video -> image)
+  const [phase, setPhase] = useState<"video" | "image">("video");
+  const [imgReady, setImgReady] = useState<boolean>(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    // Respecte prefers-reduced-motion : affiche directement l'image
+    if (typeof window !== "undefined") {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+      if (reduce.matches) {
+        setPhase("image");
+        return;
+      }
+    }
+
+    const v = videoRef.current;
+    if (!v) return;
+
+    const handleEnded = (): void => setPhase("image");
+    v.addEventListener("ended", handleEnded);
+
+    // Tente l'autoplay. Si rejeté, on bascule sur l'image.
+    const maybe = v.play();
+    if (maybe && typeof (maybe as Promise<void>).catch === "function") {
+      (maybe as Promise<void>).catch(() => setPhase("image"));
+    }
+
+    return () => {
+      v.removeEventListener("ended", handleEnded);
+    };
+  }, []);
+
+  // Classes d'opacité avec transition douce
+  const videoOpacity = phase === "video" ? "opacity-100" : "opacity-0";
+  const imageOpacity = imgReady && phase === "image" ? "opacity-100" : "opacity-0";
+
   return (
     <section className="relative overflow-hidden">
-      {/* Background video placeholder (replace src with your video) */}
+      {/* Calque média de fond */}
       <div className="absolute inset-0 z-0 pointer-events-none">
+        {/* VIDEO (toujours montée pour permettre le fondu) */}
         <video
-          className="h-full w-full object-cover"
+          ref={videoRef}
+          className={`h-full w-full object-cover absolute inset-0 transition-opacity duration-700 ease-out ${videoOpacity}`}
           autoPlay
           muted
-          loop
           playsInline
-          poster="/hero-poster.jpeg"
+          preload="auto"
+          poster="/baniere.webp"
         >
-          <source src="/hero-garden.webm" type="video/webm" />
-          <source src="/hero-garden.mp4" type="video/mp4" />
+          <source src="/baniere.webm" type="video/webm" />
+          <source src="/baniere.mp4" type="video/mp4" />
         </video>
+
+        {/* IMAGE (préchargée puis fondu quand prête) */}
+        <Image
+          src="/baniere2.webp"
+          alt="Jardin d'Eden — bannière"
+          fill
+          priority
+          sizes="100vw"
+          className={`object-cover transition-opacity duration-700 ease-out ${imageOpacity}`}
+          onLoadingComplete={(): void => setImgReady(true)}
+        />
+
         <div className="absolute inset-0 bg-black/35" />
       </div>
 
