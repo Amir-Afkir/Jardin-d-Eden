@@ -108,7 +108,7 @@ function Hero() {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="mt-4 text-cream/90 max-w-2xl"
         >
-          Conception, aménagement, entretien : des jardins qui évoluent avec les saisons.
+          Création, aménagement, entretien : des jardins qui évoluent avec les saisons.
         </motion.p>
         <div className="mt-8 flex flex-col sm:flex-row gap-3">
           <Link href="#contact" className="inline-flex items-center justify-center rounded-full bg-brand hover:bg-brand-600 text-black px-6 py-3 font-medium transition-colors">
@@ -141,7 +141,7 @@ function Services() {
     { title: "Gazon en rouleau", desc: "Pose express, rendu immédiat, variétés adaptées au climat local." },
     { title: "Clôture", desc: "Clôtures bois, grillage rigide, occultants — esthétique & sécurité." },
     { title: "Entretien", desc: "Taille, désherbage, tonte, fertilisation — contrats saisonniers." },
-    { title: "Création", desc: "Conception complète de jardin : massifs, allées, éclairage, bassins." },
+    { title: "Création", desc: "Réalisation complète de jardin : massifs, allées, éclairage, bassins." },
     { title: "Pavage", desc: "Terrasses & allées en pierre/pavés — poses durables et antidérapantes." },
     { title: "Arrosage automatique", desc: "Systèmes pilotés & économes, programmateurs et goutte‑à‑goutte." },
   ];
