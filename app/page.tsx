@@ -130,7 +130,7 @@ function TrustBar() {
         <div className="text-gold">★★★★★ 4,9/5 (Google)</div>
         <div>120+ projets livrés</div>
         <div>Éco‑responsable</div>
-        <div>Assurance décennale</div>
+        <div>Devis gratuit sous 24h</div>
       </div>
     </section>
   );
@@ -715,7 +715,7 @@ function ContactCTA() {
               </li>
               <li className="flex items-center gap-2 text-cream/85">
                 <span className="inline-block h-2 w-2 rounded-full bg-gold" />
-                Assurance décennale
+                Devis gratuit sous 24h
               </li>
             </ul>
 
