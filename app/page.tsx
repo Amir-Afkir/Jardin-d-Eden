@@ -1,7 +1,5 @@
 // app/page.tsx
 
-import ReviewsGoogle from "./components/ReviewsGoogle"
-
 import Hero from "./sections/Hero";
 import TrustBar from "./sections/TrustBar";
 import Services from "./sections/Services";
@@ -10,6 +8,7 @@ import BeforeAfter from "./sections/BeforeAfter";
 import Process from "./sections/Process";
 import SocialWall from "./sections/SocialWall";
 import Coverage from "./sections/Coverage";
+import ReviewsGoogle from "./sections/ReviewsGoogle"
 import Testimonials from "./sections/Testimonials";
 import ContactCTA from "./sections/ContactCTA";
 
