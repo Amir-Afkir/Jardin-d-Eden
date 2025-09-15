@@ -71,7 +71,7 @@ export default function Footer() {  return (
           <div className="order-1 md:order-2 flex flex-wrap items-center gap-x-6 gap-y-2">
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <span className="h-1.5 w-1.5 rounded-full bg-gold" />
-              Assurance décennale
+              Devis gratuit sous 24h
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <span className="h-1.5 w-1.5 rounded-full bg-gold" />

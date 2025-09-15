@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background text-foreground">
         <Header />
         {/* réserve la hauteur du header fixe (~96px). Ajuste si ton header change */}
-        <main className="pt-28 md:pt-16">{children}</main>
+        <main>{children}</main>
         <Footer />
         {/* Garde le CTA sous le header (z-40 < z-[9999]) */} 
       </body>

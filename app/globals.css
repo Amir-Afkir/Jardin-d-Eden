@@ -56,3 +56,19 @@ body {
 .btn-brand:hover { background-color: var(--color-brand-600); }
 .link-gold { color: var(--color-gold); }
 .border-gold { border-color: var(--color-gold); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp .6s ease-out forwards;
+  }
+  .animate-fade-up-delay {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp .7s ease-out .1s forwards;
+  }
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
