@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 
 type FormState = {
   name: string;

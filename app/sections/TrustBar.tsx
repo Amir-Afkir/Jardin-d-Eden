@@ -31,7 +31,12 @@ export default function TrustBar(): JSX.Element {
         const j: unknown = await r.json();
         if (!r.ok) throw new Error("fetch_failed");
         if (mounted && isReviewsSlim(j)) {
-          setGoogle({ rating: j.rating ?? null, userRatingCount: j.userRatingCount, googleMapsUri: (j as any).googleMapsUri ?? null });
+          let uri: string | null = null;
+          if (typeof j === "object" && j !== null && "googleMapsUri" in j) {
+            const g = j as { googleMapsUri?: unknown };
+            uri = typeof g.googleMapsUri === "string" ? g.googleMapsUri : null;
+          }
+          setGoogle({ rating: j.rating ?? null, userRatingCount: j.userRatingCount, googleMapsUri: uri });
         } else if (mounted) {
           // payload complet: on extrait les champs utiles si présents
           const k = j as Record<string, unknown>;

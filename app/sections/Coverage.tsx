@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import type * as Mapbox from "mapbox-gl";
@@ -12,14 +12,17 @@ type City = {
 
 export default function Coverage(): ReactElement {
   // Villes (coordonnées approx autour d’Orléans)
-  const cities: City[] = [
-    { name: "Orléans", coords: [1.909, 47.902] },
-    { name: "Saint-Jean-de-Braye", coords: [1.973, 47.909] },
-    { name: "Fleury-les-Aubrais", coords: [1.908, 47.933] },
-    { name: "Saran", coords: [1.876, 47.951] },
-    { name: "Semoy", coords: [1.978, 47.942] },
-    { name: "Olivet", coords: [1.906, 47.862] },
-  ];
+  const cities: City[] = useMemo(
+    () => [
+      { name: "Orléans", coords: [1.909, 47.902] },
+      { name: "Saint-Jean-de-Braye", coords: [1.973, 47.909] },
+      { name: "Fleury-les-Aubrais", coords: [1.908, 47.933] },
+      { name: "Saran", coords: [1.876, 47.951] },
+      { name: "Semoy", coords: [1.978, 47.942] },
+      { name: "Olivet", coords: [1.906, 47.862] },
+    ],
+    []
+  );
 
   const MAPBOX_TOKEN: string | undefined = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
