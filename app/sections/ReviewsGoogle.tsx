@@ -104,7 +104,7 @@ export default function ReviewsGoogle() {
         {(reviews ?? []).slice(0, 3).map((rv, i) => (
           <figure
             key={i}
-            className="rounded-xl border border-white/10 p-5 bg-cream/5"
+            className="rounded-xl border border-white/10 p-5 bg-cream/5 hover:shadow-md hover:border-gold/40 transition-all"
           >
             <div className="flex items-center gap-3">
               {rv.authorPhoto ? (

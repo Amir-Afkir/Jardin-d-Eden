@@ -1,7 +1,34 @@
+'use client';
+
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
-export default function Footer() {  return (
+type GoogleInfo = {
+  rating: number;
+  userRatingCount: number;
+  googleMapsUri: string;
+};
+
+export default function Footer() {
+  const [googleInfo, setGoogleInfo] = useState<GoogleInfo | null>(null);
+
+  useEffect(() => {
+    async function fetchGoogleInfo() {
+      try {
+        const res = await fetch("/api/google/reviews");
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        const { rating, userRatingCount, googleMapsUri } = data;
+        setGoogleInfo({ rating, userRatingCount, googleMapsUri });
+      } catch {
+        setGoogleInfo(null);
+      }
+    }
+    fetchGoogleInfo();
+  }, []);
+
+  return (
     <footer
       role="contentinfo"
       className="relative bg-background/85 border-t border-white/10 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gold/30"
@@ -79,7 +106,18 @@ export default function Footer() {  return (
             </span>
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <span className="h-1.5 w-1.5 rounded-full bg-gold" />
-              ★★★★★ 4,9/5 (Google)
+              {googleInfo ? (
+                <Link
+                  href={googleInfo.googleMapsUri}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-gold transition-colors"
+                >
+                  ★★★★★ {googleInfo.rating.toFixed(1)}/5 (Google)
+                </Link>
+              ) : (
+                <span>Chargement des avis...</span>
+              )}
             </span>
           </div>
         </div>
