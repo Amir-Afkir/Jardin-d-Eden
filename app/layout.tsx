@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+<link rel="preload" as="image" href="/baniere2.webp" type="image/webp" />
 
 export const metadata: Metadata = {
   title: "Jardin d’Eden",

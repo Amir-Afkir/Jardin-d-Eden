@@ -22,7 +22,7 @@ export default function Process() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="rounded-xl border border-white/10 p-5 bg-cream/5 shadow-sm hover:shadow-md transition-shadow"
+              className="rounded-xl border border-white/10 p-5 bg-cream/5 hover:shadow-md hover:border-gold/40 transition-all"
             >
               <div className="text-xs text-foreground/60">Étape {i + 1}</div>
               <div className="font-medium mt-1 text-gold">{s.t}</div>

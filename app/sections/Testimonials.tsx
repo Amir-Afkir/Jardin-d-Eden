@@ -22,7 +22,7 @@ export default function Testimonials(): ReactElement {
           {items.map(({ name, text, stars }) => (
             <figure
               key={name}
-              className="rounded-xl border border-white/10 p-5 bg-cream/5"
+              className="rounded-xl border border-white/10 p-5 bg-cream/5 hover:shadow-md hover:border-gold/40 transition-all"
             >
               <div className="text-gold" aria-label={`${stars} étoiles`}>
                 {"★★★★★".slice(0, stars)}
