@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useMemo } from "react";
 import type { ReactElement } from "react";
-import Link from "next/link";
+import { Button } from "@/app/components/ui/Button";
 import type * as Mapbox from "mapbox-gl";
 
 type City = {
@@ -172,12 +172,16 @@ export default function Coverage(): ReactElement {
           <p className="text-sm text-foreground/70">
             Besoin d’une intervention hors zone ? Contactez-nous, on étudie au cas par cas.
           </p>
-          <Link
-            href="#contact"
-            className="inline-flex mt-2 items-center rounded-full bg-brand hover:bg-brand-600 text-black px-4 py-2 font-medium transition-colors"
+          <Button
+            as="link"
+            href="#contact" 
+            ariaLabel="Demander un devis gratuit"
+            variant="primary"
+            size="md"
+            className="mt-2"
           >
             Devis gratuit
-          </Link>
+          </Button>
         </div>
 
         <div className="lg:col-span-3">

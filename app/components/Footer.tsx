@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { Button } from "@/app/components/ui/Button";
 
 type GoogleInfo = {
   rating: number;
@@ -42,12 +43,15 @@ export default function Footer() {
             <p className="mt-1 text-sm text-foreground/70">SIRET 940 465 297 00015</p>
             <p className="text-sm text-foreground/70">Orléans & alentours</p>
             <div className="pt-4">
-              <Link
+              <Button
+                as="link"
                 href="/#contact"
-                className="inline-flex items-center rounded-full bg-brand hover:bg-brand-600 text-black px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+                ariaLabel="Demander un devis gratuit"
+                variant="primary"
+                size="md"
               >
                 Demander un devis
-              </Link>
+              </Button>
             </div>
           </section>
 

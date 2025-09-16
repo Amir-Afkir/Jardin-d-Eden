@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { Button } from "../components/ui/Button";
 
 type FormState = {
   name: string;
@@ -318,11 +319,15 @@ export default function ContactCTA() {
 
                 {/* CTA */}
                 <div className="pt-2">
-                  <button
+                  <Button
+                    as="button"
                     type="submit"
-                    className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-6 py-3 font-medium text-black shadow-lg transition hover:bg-brand-600 disabled:opacity-60"
                     disabled={isSubmitting}
-                    aria-disabled={isSubmitting}
+                    ariaLabel={isSubmitting ? "Envoi du formulaire" : "Demander un devis"}
+                    variant="primary"
+                    size="lg"
+                    className="w-full group disabled:opacity-60"
+                    data-analytics="contact:submit"
                   >
                     <span>{isSubmitting ? "Envoi en cours…" : "Demander un devis"}</span>
                     <svg
@@ -339,7 +344,7 @@ export default function ContactCTA() {
                         strokeLinejoin="round"
                       />
                     </svg>
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Messages serveur */}

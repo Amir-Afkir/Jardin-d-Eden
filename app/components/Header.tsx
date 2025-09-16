@@ -4,6 +4,7 @@ import type React from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Button } from "@/app/components/ui/Button";
 
 export default function Header(): React.JSX.Element {
   const pathname = usePathname();
@@ -30,12 +31,9 @@ export default function Header(): React.JSX.Element {
           <Link href={hash("process")} className="hover:text-gold transition-colors">Process</Link>
           <Link href={hash("zone")} className="hover:text-gold transition-colors">Zone</Link>
           <Link href={hash("contact")} className="hover:text-gold transition-colors">Contact</Link>
-          <Link
-            href={hash("contact")}
-            className="rounded-full bg-brand hover:bg-brand-600 text-black px-4 py-2 font-medium transition-colors"
-          >
+          <Button as="link" href={hash("contact")} ariaLabel="Demander un devis gratuit" variant="primary" size="md">
             Devis gratuit
-          </Link>
+          </Button>
         </nav>
       </div>
 
@@ -79,12 +77,9 @@ function MobilePills({ hash }: PillsProps): React.JSX.Element {
             </li>
           ))}
           <li className="flex-shrink-0 ml-1">
-            <Link
-              href={hash("contact")}
-              className="block rounded-full bg-brand hover:bg-brand-600 text-black px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-black/30"
-            >
+            <Button as="link" href={hash("contact")} ariaLabel="Demander un devis gratuit" variant="primary" size="md" className="px-4 py-2">
               Devis gratuit
-            </Link>
+            </Button>
           </li>
         </ul>
       </div>

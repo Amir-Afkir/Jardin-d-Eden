@@ -1,23 +1,7 @@
 // app/sections/Hero.tsx (SERVER COMPONENT)
 import Image from "next/image";
-import Link from "next/link";
+import { Button } from "@/app/components/ui/Button";
 import { ParallaxBanner } from "../components/ParallaxBanner";
-
-type ButtonVariant = "primary" | "outline";
-
-const BTN_BASE = "inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background" as const;
-const BTN_PRIMARY = "text-black bg-gradient-to-r from-brand-600 to-brand border border-transparent shadow-[0_6px_14px_rgba(0,0,0,0.18)] hover:-translate-y-0.5 hover:bg-gradient-to-l hover:from-brand-600 hover:to-brand hover:text-white hover:shadow-[0_12px_26px_rgba(0,0,0,0.24),0_10px_24px_rgba(31,161,90,0.14)] active:translate-y-0 active:scale-[0.99] active:shadow-[0_4px_10px_rgba(0,0,0,0.18)] focus-visible:ring-brand-500" as const;
-const BTN_OUTLINE = "border border-gold text-gold bg-transparent shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 hover:bg-gold/10 hover:shadow-[0_10px_22px_rgba(0,0,0,0.18),0_8px_20px_rgba(216,178,110,0.18)] active:translate-y-0 active:scale-[0.99] active:shadow-[0_2px_8px_rgba(0,0,0,0.12)] focus-visible:ring-gold/60" as const;
-
-function Cta(props: { href: string; ariaLabel: string; children: React.ReactNode; variant: ButtonVariant }) {
-  const { href, ariaLabel, children, variant } = props;
-  const variantClasses = variant === "primary" ? BTN_PRIMARY : BTN_OUTLINE;
-  return (
-    <Link href={href} aria-label={ariaLabel} prefetch={false} className={`${BTN_BASE} ${variantClasses}`}>
-      {children}
-    </Link>
-  );
-}
 
 export default function Hero() {
   return (
@@ -75,8 +59,8 @@ export default function Hero() {
           Création, aménagement, entretien : des jardins qui évoluent avec les saisons.
         </p>
         <div className="mt-8 flex flex-col sm:flex-row gap-3">
-          <Cta href="#contact" ariaLabel="Demander un devis pour un aménagement paysager" variant="primary">Demander un devis</Cta>
-          <Cta href="#projets" ariaLabel="Voir les réalisations Jardin d’Eden" variant="outline">Voir nos réalisations</Cta>
+          <Button as="link" href="#contact" ariaLabel="Demander un devis pour un aménagement paysager" variant="primary">Demander un devis</Button>
+          <Button as="link" href="#projets" ariaLabel="Voir les réalisations Jardin d’Eden" variant="outline">Voir nos réalisations</Button>
         </div>
       </div>
     </section>
