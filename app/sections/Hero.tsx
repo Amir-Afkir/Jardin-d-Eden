@@ -28,7 +28,7 @@ export default function Hero() {
       <div className="absolute bottom-5 left-5 z-30 pointer-events-none select-none max-[380px]:hidden">
         <div className="relative h-24 w-24 md:h-28 md:w-28 rounded-full bg-black/60 backdrop-blur-sm ring-1 ring-white/20 shadow-lg overflow-hidden">
           <Image
-            src="/logo.png"
+            src="/logo.svg"
             alt=""
             role="presentation"
             fill

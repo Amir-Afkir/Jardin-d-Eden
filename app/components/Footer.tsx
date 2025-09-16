@@ -79,7 +79,7 @@ export default function Footer() {
           <div className="md:col-span-2 order-0 md:order-4 mx-auto md:justify-self-end self-start">
             <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full bg-black/25 backdrop-blur-sm ring-1 ring-white/20 shadow-xl overflow-hidden">
               <Image
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Le Jardin d’Eden"
                 fill
                 className="object-contain p-2"
