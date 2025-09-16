@@ -13,9 +13,9 @@ export default function BeforeAfter() {
 
       <div className="mt-6 grid md:grid-cols-2 gap-6">
         {[
-          { src: "/before.webp", label: "Avant" },
-          { src: "/after.webp", label: "Après" },
-        ].map((img, i) => (
+          { src: "/BeforeAfter/before.webp", label: "Avant" },
+          { src: "/BeforeAfter/after.webp", label: "Après" },
+        ].map((img, i) => ( 
           <motion.div
             key={img.label}
             initial={{ opacity: 0, y: 20 }}

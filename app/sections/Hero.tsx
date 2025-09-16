@@ -1,59 +1,82 @@
 // app/sections/Hero.tsx (SERVER COMPONENT)
 import Image from "next/image";
 import Link from "next/link";
+import { ParallaxBanner } from "../components/ParallaxBanner";
+
+type ButtonVariant = "primary" | "outline";
+
+const BTN_BASE = "inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background" as const;
+const BTN_PRIMARY = "text-black bg-gradient-to-r from-brand-600 to-brand border border-transparent shadow-[0_6px_14px_rgba(0,0,0,0.18)] hover:-translate-y-0.5 hover:bg-gradient-to-l hover:from-brand-600 hover:to-brand hover:text-white hover:shadow-[0_12px_26px_rgba(0,0,0,0.24),0_10px_24px_rgba(31,161,90,0.14)] active:translate-y-0 active:scale-[0.99] active:shadow-[0_4px_10px_rgba(0,0,0,0.18)] focus-visible:ring-brand-500" as const;
+const BTN_OUTLINE = "border border-gold text-gold bg-transparent shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 hover:bg-gold/10 hover:shadow-[0_10px_22px_rgba(0,0,0,0.18),0_8px_20px_rgba(216,178,110,0.18)] active:translate-y-0 active:scale-[0.99] active:shadow-[0_2px_8px_rgba(0,0,0,0.12)] focus-visible:ring-gold/60" as const;
+
+function Cta(props: { href: string; ariaLabel: string; children: React.ReactNode; variant: ButtonVariant }) {
+  const { href, ariaLabel, children, variant } = props;
+  const variantClasses = variant === "primary" ? BTN_PRIMARY : BTN_OUTLINE;
+  return (
+    <Link href={href} aria-label={ariaLabel} prefetch={false} className={`${BTN_BASE} ${variantClasses}`}>
+      {children}
+    </Link>
+  );
+}
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden">
+    <section id="hero" aria-labelledby="hero-title" className="relative overflow-hidden">
       {/* Background image */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <Image
-          src="/baniere/baniere2-2560.avif"         // variante optimisée (AVIF)
-          alt=""
-          role="presentation"
-          fill
-          priority                           // eager + fetchPriority=high
-          fetchPriority="high"
-          // Largeur effective affichée : rarement >1536px, mais on couvre le 1920
-          sizes="(min-width:1536px) 1536px, (min-width:1280px) 1280px, 100vw"
-          placeholder="blur"
-          blurDataURL="data:image/webp;base64,UklGRrAAAABXRUJQVlA4IKQAAADQAwCdASoYAA4APyV6tFGuJ6UisAgBwCSJbAAD5PiWrttJ3ZncUgAA/ZyAylS0Ei8h/FsKUIFF7DW+eO7J5JiQsjZ35cihlZs9EAL1P/nkYl6S67unPONbz8fzJOrIUnjt5AGXDQWj+sInZXwa+QHiNCtqEraUAtcmLHf2Fs3mk9ENpZM0nnQJc3KlOXfjesDEGsrQA0TriHIoW94G2fDbSz0cAA=="
-          className="object-cover select-none"
-          draggable={false}
-        />
-        <div className="absolute inset-0 bg-black/35" aria-hidden="true" />
-      </div>
-
-      {/* Sceau / logo */}
-      <div className="absolute bottom-5 left-5 z-30 pointer-events-none select-none max-[380px]:hidden">
-        <div className="relative h-24 w-24 md:h-28 md:w-28 rounded-full bg-black/60 backdrop-blur-sm ring-1 ring-white/20 shadow-lg overflow-hidden">
-          <Image
-            src="/logo.svg"
+        <div className="absolute inset-0 z-0 pointer-events-none contain-paint">
+        <ParallaxBanner speed={0.48} maxShift={56}>
+            <Image
+            src="/baniere/baniere2-2560.avif"
             alt=""
-            role="presentation"
             fill
-            className="object-contain p-1"
-            sizes="(min-width:768px) 112px, 96px"
-            priority={false}
-          />
+            priority
+            quality={70}
+            sizes="(min-width:1280px) 1152px, (min-width:1024px) 1024px, 100vw"
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='%230b0b0b'/><stop offset='100%' stop-color='%23131313'/></linearGradient></defs><rect width='100%' height='100%' fill='url(%23g)'/></svg>"
+            className="object-cover select-none"
+            draggable={false}
+            />
+            <div className="absolute inset-0 bg-black/40 sm:bg-black/35 lg:bg-black/30" aria-hidden="true" />
+        </ParallaxBanner>
+        </div>
+
+      {/* Sceau / logo – version premium */}
+      <div className="absolute z-30 select-none max-[380px]:hidden left-[max(theme(spacing.5),env(safe-area-inset-left))] bottom-[max(theme(spacing.5),env(safe-area-inset-bottom))]">
+        <div className="relative h-24 w-24 md:h-28 md:w-28">
+          {/* Halo radial doux (doré) */}
+          <div aria-hidden className="pointer-events-none absolute -inset-3 rounded-full bg-[radial-gradient(closest-side,rgba(216,178,110,0.18),transparent_70%)] blur-md"></div>
+          {/* Liseré conique animé très subtil (gold→vert) */}
+          <div aria-hidden className="pointer-events-none absolute -inset-1 rounded-full opacity-40 bg-[conic-gradient(from_0deg,rgba(216,178,110,0.00),rgba(216,178,110,0.35),rgba(31,161,90,0.25),rgba(216,178,110,0.00))] motion-safe:animate-[spin_14s_linear_infinite] motion-reduce:animate-none will-change-[transform,opacity] transform-gpu"></div>
+
+          {/* Médaillon */}
+          <div className="relative h-full w-full rounded-full bg-black/60 backdrop-blur-sm ring-1 ring-white/20 outline outline-1 outline-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden">
+            <Image
+              src="/logo.svg"
+              alt=""
+              fill
+              className="object-contain p-1"
+              sizes="(min-width:768px) 112px, 96px"
+              priority={false}
+            />
+          </div>
+
+          {/* Lueur respirante très légère (accessibilité: décorative) */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 rounded-full motion-safe:animate-pulse motion-reduce:animate-none opacity-20 bg-[radial-gradient(ellipse_at_center,rgba(31,161,90,0.25),transparent_60%)] will-change-[transform,opacity] transform-gpu"></div>
         </div>
       </div>
 
       {/* Contenu */}
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-28 md:py-40">
-        <h1 className="animate-fade-up text-3xl md:text-5xl font-semibold text-cream max-w-3xl">
+        <h1 id="hero-title" className="motion-safe:animate-fade-up motion-reduce:animate-none text-3xl md:text-5xl font-semibold text-cream max-w-3xl">
           Transformons votre extérieur en un espace <span className="text-gold">vivant</span> et durable
         </h1>
-        <p className="animate-fade-up-delay mt-4 text-cream/90 max-w-2xl">
+        <p className="motion-safe:animate-fade-up-delay motion-reduce:animate-none mt-4 text-cream/90 max-w-2xl">
           Création, aménagement, entretien : des jardins qui évoluent avec les saisons.
         </p>
         <div className="mt-8 flex flex-col sm:flex-row gap-3">
-          <Link href="#contact" className="inline-flex items-center justify-center rounded-full bg-brand hover:bg-brand-600 text-black px-6 py-3 font-medium transition-colors">
-            Demander un devis
-          </Link>
-          <Link href="#projets" className="inline-flex items-center justify-center rounded-full border border-gold text-gold px-6 py-3 font-medium hover:bg-gold/10 transition-colors">
-            Voir nos réalisations
-          </Link>
+          <Cta href="#contact" ariaLabel="Demander un devis pour un aménagement paysager" variant="primary">Demander un devis</Cta>
+          <Cta href="#projets" ariaLabel="Voir les réalisations Jardin d’Eden" variant="outline">Voir nos réalisations</Cta>
         </div>
       </div>
     </section>
