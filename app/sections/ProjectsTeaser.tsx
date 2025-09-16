@@ -35,6 +35,9 @@ export default function ProjectsTeaser(): JSX.Element {
                   src={p.image}
                   alt={p.title}
                   fill
+                  placeholder="blur"
+                  blurDataURL={p.blurDataURL}
+                  sizes="(min-width:1280px) 33vw, 100vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
