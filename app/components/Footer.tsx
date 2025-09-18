@@ -92,8 +92,10 @@ export default function Footer() {
               />
             </div>
           </div>
-        </div>
+        </div> 
       </div>
+
+
 
       {/* Barre inférieure */}
       <div className="border-t border-white/10">

@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { promises as fs } from "fs";
 import path from "path";
 
-// === CONFIG ===
+// === CONFIG (défauts) ===
 const BANNER_INPUT = "./public/baniere/baniere2.webp";
 const BANNER_OUT_DIR = "./public/baniere";
 const BANNER_SIZES = [2560, 1920, 1536];
@@ -22,6 +22,11 @@ async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
 
+function isImageFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return IMG_EXT.has(ext);
+}
+
 async function buildDerivatives(inputPath, outDir, widths) {
   const base = path.basename(inputPath, path.extname(inputPath));
   const outputs = [];
@@ -36,7 +41,7 @@ async function buildDerivatives(inputPath, outDir, widths) {
     outputs.push(avifOut, webpOut);
   }
 
-  // blur
+  // blur tiny
   const blurOut = path.join(outDir, `${base}-blur.webp`);
   await sharp(inputPath).resize({ width: BLUR_W }).webp({ quality: BLUR_Q }).toFile(blurOut);
   const buf = await fs.readFile(blurOut);
@@ -46,15 +51,90 @@ async function buildDerivatives(inputPath, outDir, widths) {
 }
 
 async function exists(p) {
-  try { await fs.stat(p); return true; } catch { return false; }
+  try {
+    await fs.stat(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function processSingleFile(filePath, sizes) {
+  if (!isImageFile(filePath)) {
+    console.log(`(i) Ignoré (pas une image supportée): ${filePath}`);
+    return null;
+  }
+  const outDir = path.dirname(filePath);
+  const { outputs, blurOut, blurB64, base } = await buildDerivatives(filePath, outDir, sizes);
+  for (const o of outputs) console.log(`  ✓ ${o}`);
+  console.log(`  ✓ ${blurOut}`);
+  return { base, blurB64 };
+}
+
+async function processDirectory(dirPath, sizes) {
+  const entries = await fs.readdir(dirPath);
+  const files = entries
+    .filter((f) => isImageFile(f))
+    .map((f) => path.join(dirPath, f));
+
+  if (files.length === 0) {
+    console.log("(i) Aucune image trouvée dans", dirPath);
+    return {};
+  }
+
+  const blurMap = {};
+  for (const file of files) {
+    const res = await processSingleFile(file, sizes);
+    if (res) blurMap[res.base] = res.blurB64;
+  }
+  return blurMap;
 }
 
 (async () => {
-  // 1) Banner (si présent)
+  const arg = process.argv[2]; // chemin optionnel (fichier OU dossier)
+  if (arg) {
+    // Mode ciblé
+    const target = path.resolve(arg);
+    let stat;
+    try {
+      stat = await fs.stat(target);
+    } catch {
+      console.error(`❌ Chemin introuvable: ${target}`);
+      process.exit(1);
+    }
+
+    if (stat.isDirectory()) {
+      console.log("→ Génération pour le dossier:", target);
+      const blurMap = await processDirectory(target, PROJECT_SIZES);
+      console.log("\n=== BlurDataURL à coller dans projects.ts ===");
+      console.log(JSON.stringify(blurMap, null, 2));
+      console.log("\nTerminé ✅");
+      return;
+    }
+
+    // fichier
+    console.log("→ Génération pour le fichier:", target);
+    const res = await processSingleFile(target, PROJECT_SIZES);
+    if (res) {
+      console.log("\n=== BlurDataURL pour ce fichier ===");
+      console.log(JSON.stringify({ [res.base]: res.blurB64 }, null, 2));
+    }
+    console.log("\nTerminé ✅");
+    return;
+  }
+
+  // Mode par défaut (aucun argument) : bannière + tout le dossier projects
+  console.log("→ Mode par défaut (bannière + projects)");
+
+  // 1) Bannière (si présente)
   if (await exists(BANNER_INPUT)) {
     await ensureDir(BANNER_OUT_DIR);
     console.log("→ Génération bannière…");
-    const { outputs, blurOut, blurB64 } = await buildDerivatives(BANNER_INPUT, BANNER_OUT_DIR, BANNER_SIZES);
+    const { outputs, blurOut, blurB64 } = await buildDerivatives(
+      BANNER_INPUT,
+      BANNER_OUT_DIR,
+      BANNER_SIZES
+    );
     for (const o of outputs) console.log(`  ✓ ${o}`);
     console.log(`  ✓ ${blurOut}`);
     console.log("\nCopie ce blur dans Hero.tsx → blurDataURL :\n");
@@ -64,31 +144,15 @@ async function exists(p) {
     console.log("(i) Bannière introuvable, étape ignorée:", BANNER_INPUT);
   }
 
-  // 2) Projects
+  // 2) Projects (dossier complet)
   console.log("→ Génération projets…");
   if (!(await exists(PROJECTS_DIR))) {
     console.log("(i) Dossier projets introuvable:", PROJECTS_DIR);
     process.exit(0);
   }
+  const blurMap = await processDirectory(PROJECTS_DIR, PROJECT_SIZES);
 
-  const files = (await fs.readdir(PROJECTS_DIR)).filter((f) => IMG_EXT.has(path.extname(f).toLowerCase()));
-  if (files.length === 0) {
-    console.log("(i) Aucune image trouvée dans", PROJECTS_DIR);
-    process.exit(0);
-  }
-
-  const blurMap = {}; // { [basename]: dataURL }
-
-  for (const file of files) {
-    const inputPath = path.join(PROJECTS_DIR, file);
-    const outDir = PROJECTS_DIR; // mêmes dossiers
-    const { outputs, blurOut, blurB64, base } = await buildDerivatives(inputPath, outDir, PROJECT_SIZES);
-    for (const o of outputs) console.log(`  ✓ ${o}`);
-    console.log(`  ✓ ${blurOut}`);
-    blurMap[base] = blurB64;
-  }
-
-  console.log("\n\n=== BlurDataURL à coller dans projects.ts ===\n");
+  console.log("\n=== BlurDataURL à coller dans projects.ts ===");
   console.log(JSON.stringify(blurMap, null, 2));
   console.log("\nExemple d'usage dans projects.ts :\n");
   console.log(`// ...
@@ -97,4 +161,4 @@ async function exists(p) {
 // ...`);
 
   console.log("\nTerminé ✅");
-})();
+})(); 

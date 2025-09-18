@@ -29,11 +29,11 @@ export const projects: ReadonlyArray<Project> = [
     tags: ["mineral", "massifs"],
   },
   {
-    slug: "devanture-elegante-arbre-sculptural",
-    title: "Devanture élégante & arbre sculptural",
-    image: "/projects/p4-1536.avif",
-    blurDataURL: "data:image/webp;base64,PASTE_FROM_JSON_FOR_p4",
-    tags: ["devanture", "arbres"],
+    slug: "massif-arrondi-palmiers-decoratifs",
+    title: "Massif arrondi & palmiers décoratifs",
+    image: "/projects/p6-1536.avif",
+    blurDataURL: "data:image/webp;base64,PASTE_FROM_JSON_FOR_p6",
+    tags: ["massif", "palmiers"],
   },
   {
     slug: "entree-illuminee-palmiers-exotiques",
@@ -43,10 +43,10 @@ export const projects: ReadonlyArray<Project> = [
     tags: ["éclairage", "palmiers"],
   },
   {
-    slug: "massif-arrondi-palmiers-decoratifs",
-    title: "Massif arrondi & palmiers décoratifs",
-    image: "/projects/p6-1536.avif",
-    blurDataURL: "data:image/webp;base64,PASTE_FROM_JSON_FOR_p6",
-    tags: ["massif", "palmiers"],
+    slug: "Parcours-élégant-en-pas-japonais",
+    title: "Parcours élégant en pas japonais",
+    image: "/projects/p4-1536.avif",
+    blurDataURL: "data:image/webp;base64,PASTE_FROM_JSON_FOR_p4",
+    tags: ["parcours", "japonais"],
   },
 ];
