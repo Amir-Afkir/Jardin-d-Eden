@@ -72,3 +72,15 @@ body {
     to { opacity: 1; transform: translateY(0); }
   }
 }
+
+/* Évite tout flash blanc dans l’iframe TikTok pendant le boot */
+.ttk-embed { background: #000; }
+.ttk-embed iframe {
+  -webkit-mask-image: linear-gradient(#000 0%, #000 calc(100% - 52px), transparent 100%);
+  mask-image: linear-gradient(#000 0%, #000 calc(100% - 52px), transparent 100%);
+}
+
+/* Optionnel: neutraliser marges/fonds du blockquote TikTok */
+.tiktok-embed, .tiktok-embed * {
+  background: transparent !important;
+}
