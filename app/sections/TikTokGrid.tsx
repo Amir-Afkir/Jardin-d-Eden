@@ -116,6 +116,16 @@ const TikTokCard=memo(TikTokCardBase,(a,b)=>eq(a.item,b.item));
 
 /** Data fetch */
 const sig=(arr:ReadonlyArray<TikTokItem>)=>arr.map(x=>x.id).join("|");
+const uniqById = (arr: ReadonlyArray<TikTokItem>): ReadonlyArray<TikTokItem> => {
+  const seen = new Set<string>();
+  const out: TikTokItem[] = [];
+  for (const it of arr) {
+    if (seen.has(it.id)) continue;
+    seen.add(it.id);
+    out.push(it);
+  }
+  return out;
+};
 async function fetchOnce(limit:number,etag:string,signal:AbortSignal){const r=await fetch(`/api/tiktok/cache?limit=${limit}`,{cache:"no-store",signal,headers:etag?{"If-None-Match":etag}:{}}); 
   if(r.status===304) return {items:[],etag:etag||null};
   if(!r.ok) throw new Error(`http_${r.status}`);
@@ -133,11 +143,24 @@ export default function TikTokGrid({initialItems=[] as ReadonlyArray<TikTokItem>
   useEffect(()=>{let m=true,t:ReturnType<typeof setInterval>|null=null;
     const load=async()=>{try{setLoading(true); abortRef.current?.abort(); const ctl=new AbortController(); abortRef.current=ctl;
       const prev=typeof window!=="undefined"?sessionStorage.getItem("tt-cache-etag")??"":""; const {items:fresh,etag}=await fetchOnce(9,prev,ctl.signal);
-      if(fresh.length===0 && items.length>0){setErr(null);return}
-      if(fresh.length===0 && items.length===0){ if(typeof window!=="undefined") sessionStorage.removeItem("tt-cache-etag");
-        const s2=await fetchOnce(9,"",ctl.signal); if(!m) return; const g=s2.items.length>0?sig(s2.items):""; if(g!==last.current){setItems(s2.items); last.current=g}
-        setErr(null); if(typeof window!=="undefined"&&s2.etag) sessionStorage.setItem("tt-cache-etag",s2.etag!); return;}
-      if(!m) return; const g2=fresh.length>0?sig(fresh):""; if(g2!==last.current){setItems(fresh); last.current=g2} setErr(null); if(typeof window!=="undefined"&&etag) sessionStorage.setItem("tt-cache-etag",etag);
+      const freshUniq = uniqById(fresh);
+      if(freshUniq.length===0 && items.length>0){ setErr(null); return; }
+      if(freshUniq.length===0 && items.length===0){
+        if(typeof window!=="undefined") sessionStorage.removeItem("tt-cache-etag");
+        const s2=await fetchOnce(9,"",ctl.signal);
+        if(!m) return;
+        const s2Uniq = uniqById(s2.items);
+        const g = s2Uniq.length>0 ? sig(s2Uniq) : "";
+        if(g!==last.current){ setItems(s2Uniq); last.current=g; }
+        setErr(null);
+        if(typeof window!=="undefined"&&s2.etag) sessionStorage.setItem("tt-cache-etag", s2.etag!);
+        return;
+      }
+      if(!m) return;
+      const g2 = freshUniq.length>0 ? sig(freshUniq) : "";
+      if(g2!==last.current){ setItems(freshUniq); last.current=g2; }
+      setErr(null);
+      if(typeof window!=="undefined"&&etag) sessionStorage.setItem("tt-cache-etag", etag);
     } catch (e) { if (m) setErr(errMsg(e)); } finally { m && setLoading(false); }};
     if(needInit) void load(); t=setInterval(load,2*60*60*1000);
     return()=>{m=false; if(t)clearInterval(t); abortRef.current?.abort(); abortRef.current=null};

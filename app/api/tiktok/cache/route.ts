@@ -72,12 +72,17 @@ export function normalizeRecord(rec: Record<string, unknown>, fallbackHandle?: s
     (rec as { url?: string }).url ||
     "";
 
-  const id =
+  // Extract the canonical video id from the URL when possible (most reliable)
+  const urlId = urlRaw ? extractIdFromUrl(urlRaw) : null;
+
+  // Dataset-provided ids (may be unstable across pages/runs)
+  const dsId =
     (rec as { itemId?: string }).itemId ||
     (rec as { id?: string }).id ||
-    (urlRaw ? extractIdFromUrl(urlRaw) : null) ||
     "";
 
+  // Prefer the URL-derived id; fallback to dataset id if URL missing
+  const id = urlId || dsId;
   if (!id) return null;
 
   // Thumbs/poster
@@ -93,8 +98,7 @@ export function normalizeRecord(rec: Record<string, unknown>, fallbackHandle?: s
   const title = (rec as { title?: string }).title ?? undefined;
   const published_at = (rec as { createTimeISO?: string }).createTimeISO ?? undefined;
 
-  const finalUrl =
-    urlRaw || (fallbackHandle ? `https://www.tiktok.com/@${fallbackHandle}/video/${id}` : "");
+  const finalUrl = urlRaw || (fallbackHandle ? `https://www.tiktok.com/@${fallbackHandle}/video/${id}` : "");
 
   return {
     id: String(id),
