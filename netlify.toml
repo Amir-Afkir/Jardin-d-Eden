@@ -16,19 +16,35 @@ for = "/*"
   X-Content-Type-Options = "nosniff"
   Referrer-Policy = "strict-origin-when-cross-origin"
   Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+  # ⚠️ triple quotes obligatoires pour toute la CSP
   Content-Security-Policy = """
     default-src 'self';
     base-uri 'self';
-    img-src 'self' data: blob: https://*.tiktokcdn.com https://*.tiktokcdn-eu.com https://*.tiktok.com https://*.mapbox.com https://api.mapbox.com;
+
+    img-src 'self' data: blob:
+      https://*.tiktokcdn.com https://*.tiktokcdn-eu.com https://*.tiktok.com
+      https://*.ibyteimg.com
+      https://*.mapbox.com https://api.mapbox.com;
+
     media-src 'self' blob: data:;
+
     font-src 'self' data:;
-    script-src 'self' https://www.tiktok.com https://*.tiktok.com https://api.mapbox.com;
+
+    script-src 'self'
+      https://www.tiktok.com https://*.tiktok.com
+      https://api.mapbox.com;
+
     style-src 'self' 'unsafe-inline' https://api.mapbox.com;
+
     frame-src https://www.tiktok.com https://*.tiktok.com;
+
     connect-src 'self'
       https://open.tiktokapis.com
       https://open-api.tiktokglobalplatform.com
       https://www.tiktok.com https://*.tiktok.com
       https://*.tiktokcdn.com https://*.tiktokcdn-eu.com
+      https://*.ibyteimg.com https://*.ibytedtos.com https://*.byteoversea.com
+      https://*.tiktokv.com https://mon-i18n.tiktokv.com
       https://api.mapbox.com https://events.mapbox.com;
   """

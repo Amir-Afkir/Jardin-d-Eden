@@ -47,6 +47,17 @@ function computeETag(items: ReadonlyArray<TikTokItem>): string {
   return `W/"${hash}.${items.length}"`;
 }
 
+function uniqServer(arr: ReadonlyArray<TikTokItem>): TikTokItem[] {
+  const seen = new Set<string>();
+  const out: TikTokItem[] = [];
+  for (const it of arr) {
+    if (seen.has(it.id)) continue;
+    seen.add(it.id);
+    out.push(it);
+  }
+  return out;
+}
+
 /**
  * Only ask Apify for the fields we actually use.
  * (Smaller payload = faster)
@@ -210,6 +221,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Final safety: deduplicate by stable video id
+  items = uniqServer(items);
   const etag = computeETag(items);
 
   const inm = req.headers.get("if-none-match");
