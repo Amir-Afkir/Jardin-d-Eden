@@ -58,7 +58,9 @@ export async function GET(req: Request): Promise<Response> {
 
   const upstream = new URL("https://www.tiktok.com/oembed");
   upstream.searchParams.set("url", canonical);
-  upstream.searchParams.set("_cb", requestedId || String(Date.now()));
+  // Cache-buster robuste : ID + timestamp + jitter aléatoire pour éviter les collisions CDN TikTok
+  const cacheBuster = `${requestedId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  upstream.searchParams.set("_cb", cacheBuster);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
@@ -77,6 +79,8 @@ export async function GET(req: Request): Promise<Response> {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36",
       Accept: "application/json",
       "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
     },
     cache: "no-store",
     signal: controller.signal,
