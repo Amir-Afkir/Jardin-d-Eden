@@ -1,6 +1,7 @@
 // app/sections/TikTokGrid.tsx
 "use client";
 import React, { memo, useEffect, useRef, useState, useMemo } from "react";
+import Image from "next/image";
 
 /** Types & const */
 export type TikTokItem={id:string;url:string;thumb?:string;title?:string;published_at?:string;mp4?:string;poster?:string};
@@ -12,7 +13,7 @@ const isErr=(r:ApiResp):r is ApiErr=>"error"in r;
 const isTikTok=(u:string)=>{try{return new URL(u).hostname.endsWith("tiktok.com")}catch{return false}};
 const vidId=(u:string)=>{try{const p=new URL(u).pathname.split("/").filter(Boolean);const i=p.findIndex(x=>x==="video");return i>=0&&p[i+1]?p[i+1]:null}catch{return null}};
 const canEmbed=(u:string)=>/^\d+$/.test(vidId(u)??"");
-const eq=(a:TikTokItem,b:TikTokItem)=>a.id===b.id&&a.url===b.url&&a.mp4===b.mp4&&a.poster===b.poster&&a.thumb===b.thumb&&a.title===b.title&&a.published_at===b.published_at;
+const eq=(a:TikTokItem,b:TikTokItem)=>a.id===b.id&&a.url===b.url&&a.poster===b.poster&&a.thumb===b.thumb&&a.title===b.title&&a.published_at===b.published_at;
 
 /** TikTok embed script (idempotent) */
 declare global{interface Window{tiktokEmbedLoaded?:()=>void;__ttEmbedReady?:boolean}}
@@ -21,16 +22,15 @@ function loadTT(){if(typeof document==="undefined"||window.__ttEmbedReady) retur
   ttScriptP=new Promise<void>((ok,err)=>{const ex=document.querySelector<HTMLScriptElement>('script[data-tt-embed="1"]');
     const done=()=>{window.__ttEmbedReady=true;ok()}, fail=()=>err(new Error("tt_script_failed"));
     if(ex){if(window.__ttEmbedReady) return done(); ex.addEventListener("load",done,{once:true}); ex.addEventListener("error",fail,{once:true}); return;}
-    const orig=console.error; console.error=(...a:any[])=>{if(typeof a[0]==="string"&&a[0].startsWith("[TikTok]"))return; orig(...a)};
     const s=document.createElement("script"); s.src="https://www.tiktok.com/embed.js"; s.async=true; s.defer=true; s.setAttribute("data-tt-embed","1");
-    s.onload=()=>{console.error=orig; done()}; s.onerror=()=>{console.error=orig; fail()}; document.body.appendChild(s);
+    s.onload=()=>{ done(); }; s.onerror=()=>{ fail(); }; document.body.appendChild(s);
   }); return ttScriptP;
 }
 
 /** oEmbed HTML cache + fetch */
 const oCache=new Map<string,string>();
 async function getOHtml(url:string,signal?:AbortSignal){const c=oCache.get(url); if(c) return c;
-  const r=await fetch(`/api/tiktok/oembed?url=${encodeURIComponent(url)}`,{cache:"force-cache",signal}); if(!r.ok) throw new Error(`oembed_http_${r.status}`);
+  const r=await fetch(`/api/tiktok/oembed?url=${encodeURIComponent(url)}`,{cache:"no-store",signal}); if(!r.ok) throw new Error(`oembed_http_${r.status}`);
   const j=await r.json() as {html?:string}; if(!j.html) throw new Error("oembed_missing_html"); oCache.set(url,j.html); return j.html;
 }
 
@@ -78,7 +78,6 @@ const TikTokOEmbed=({url}:{url:string})=>{
   },[url,html]);
   if(!html) return <div ref={ref} className="animate-pulse bg-foreground/10" style={{aspectRatio:ASPECT}}/>;
   return <div ref={ref} className="tt-crop" style={{aspectRatio:ASPECT}}>
-    {/* eslint-disable-next-line react/no-danger */}
     <div dangerouslySetInnerHTML={{__html:html}}/>{err?<span className="sr-only">Erreur oEmbed: {err}</span>:null}
   </div>;
 };
@@ -96,9 +95,19 @@ const TikTokCardBase=({item}:{item:TikTokItem})=>{
   if(vid) return <Card ariaLabel={item.title||"Vidéo TikTok"} containerRef={containerRef}><TikTokOEmbed url={item.url}/></Card>;
   return (
     <a href={item.url} target="_blank" rel="nofollow noopener noreferrer" aria-label="Voir la vidéo sur TikTok" className="block w-full overflow-hidden rounded-xl shadow-sm transition-shadow hover:shadow-md" style={{maxWidth:CARD_MAX_W}}>
-      <div style={{aspectRatio:ASPECT}} className="grid w-full place-items-center bg-foreground/5">
-        {item.thumb? <img src={item.thumb} alt={item.title||"Aperçu TikTok"} className="h-full w-full object-cover" loading="lazy" decoding="async" fetchPriority="auto"/> :
-          <span className="px-3 text-center text-xs text-foreground/60">Vidéo indisponible — ouvrir sur TikTok</span>}
+      <div style={{aspectRatio:ASPECT}} className="relative grid w-full place-items-center bg-foreground/5">
+        {item.thumb? (
+          <Image
+            src={item.thumb}
+            alt={item.title||"Aperçu TikTok"}
+            fill
+            sizes="(max-width: 640px) 320px, 320px"
+            className="object-cover"
+            priority={false}
+          />
+        ) : (
+          <span className="px-3 text-center text-xs text-foreground/60">Vidéo indisponible — ouvrir sur TikTok</span>
+        )}
       </div>
     </a>
   );
@@ -106,7 +115,7 @@ const TikTokCardBase=({item}:{item:TikTokItem})=>{
 const TikTokCard=memo(TikTokCardBase,(a,b)=>eq(a.item,b.item));
 
 /** Data fetch */
-const sig=(arr:ReadonlyArray<TikTokItem>)=>arr.map(x=>`${x.id}:${x.mp4?"m":"i"}`).join("|");
+const sig=(arr:ReadonlyArray<TikTokItem>)=>arr.map(x=>x.id).join("|");
 async function fetchOnce(limit:number,etag:string,signal:AbortSignal){const r=await fetch(`/api/tiktok/cache?limit=${limit}`,{cache:"no-store",signal,headers:etag?{"If-None-Match":etag}:{}}); 
   if(r.status===304) return {items:[],etag:etag||null};
   if(!r.ok) throw new Error(`http_${r.status}`);
@@ -119,6 +128,8 @@ export default function TikTokGrid({initialItems=[] as ReadonlyArray<TikTokItem>
   const [items,setItems]=useState(initialItems),[err,setErr]=useState<string|null>(null),[loading,setLoading]=useState(initialItems.length===0);
   const last=useRef(""), abortRef=useRef<AbortController|null>(null), needInit=initialItems.length===0;
 
+  const errMsg = (e: unknown) => (e instanceof Error ? e.message : "unknown_error");
+
   useEffect(()=>{let m=true,t:ReturnType<typeof setInterval>|null=null;
     const load=async()=>{try{setLoading(true); abortRef.current?.abort(); const ctl=new AbortController(); abortRef.current=ctl;
       const prev=typeof window!=="undefined"?sessionStorage.getItem("tt-cache-etag")??"":""; const {items:fresh,etag}=await fetchOnce(9,prev,ctl.signal);
@@ -127,7 +138,7 @@ export default function TikTokGrid({initialItems=[] as ReadonlyArray<TikTokItem>
         const s2=await fetchOnce(9,"",ctl.signal); if(!m) return; const g=s2.items.length>0?sig(s2.items):""; if(g!==last.current){setItems(s2.items); last.current=g}
         setErr(null); if(typeof window!=="undefined"&&s2.etag) sessionStorage.setItem("tt-cache-etag",s2.etag!); return;}
       if(!m) return; const g2=fresh.length>0?sig(fresh):""; if(g2!==last.current){setItems(fresh); last.current=g2} setErr(null); if(typeof window!=="undefined"&&etag) sessionStorage.setItem("tt-cache-etag",etag);
-    }catch(e:any){m&&setErr(e?.message||"unknown_error")}finally{m&&setLoading(false)}};
+    } catch (e) { if (m) setErr(errMsg(e)); } finally { m && setLoading(false); }};
     if(needInit) void load(); t=setInterval(load,2*60*60*1000);
     return()=>{m=false; if(t)clearInterval(t); abortRef.current?.abort(); abortRef.current=null};
   },[needInit,items.length]);
