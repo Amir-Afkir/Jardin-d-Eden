@@ -1,3 +1,30 @@
+// app/api/tiktok/oembed/route.ts
+type OEmbedResp = {
+  html?: string;
+  error?: string;
+};
+type FetchResult =
+  | { ok: true; status: 200; body: OEmbedResp }
+  | { ok: false; status: number; body: null };
+
+async function fetchOEmbed(url: string): Promise<FetchResult> {
+  const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
+  if (!res.ok) return { ok: false as const, status: res.status, body: null };
+  const body = (await res.json()) as OEmbedResp;
+  return { ok: true as const, status: 200, body };
+}
+
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const t = url.searchParams.get("url");
+  if (!t) return new Response("Missing url param", { status: 400 });
+  const r = await fetchOEmbed(t);
+  if (!r.ok) return new Response(null, { status: r.status });
+  const data = r.body as OEmbedResp;
+  return new Response(JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
+}
+
+
 // app/sections/TikTokGrid.tsx
 "use client";
 
@@ -226,7 +253,6 @@ export default function TikTokGrid({
       abortRef.current?.abort();
       abortRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needInit, items.length]);
 
   const some = items.length > 0;
