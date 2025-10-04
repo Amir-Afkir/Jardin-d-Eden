@@ -1,4 +1,3 @@
-// app/api/tiktok/cache/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 
