@@ -84,3 +84,19 @@ body {
 .tiktok-embed, .tiktok-embed * {
   background: transparent !important;
 }
+
+
+.tt-frame-guard {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;              /* cache toute scroll bar éventuelle */
+  overscroll-behavior: contain;  /* évite le scroll chaîné sur la page */
+  touch-action: manipulation;    /* réduit certains gestes tactiles */
+}
+.tt-frame-guard > iframe {
+  border: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}

@@ -105,15 +105,17 @@ async function fetchOnce(limit: number, etag: string, signal: AbortSignal): Prom
 const TikTokIframe = ({ id, title }: { id: string; title?: string }) => {
   const src = `https://www.tiktok.com/embed/v2/${id}`;
   return (
-    <iframe
-      src={src}
-      title={title || "TikTok"}
-      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-      referrerPolicy="strict-origin-when-cross-origin"
-      loading="lazy"
-      allowFullScreen
-      style={{ border: 0, width: "100%", height: "100%", display: "block" }}
-    />
+    <div className="tt-frame-guard">
+      <iframe
+        src={src}
+        title={title || "TikTok"}
+        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+        referrerPolicy="strict-origin-when-cross-origin"
+        loading="lazy"
+        allowFullScreen
+        scrolling="no"
+      />
+    </div>
   );
 };
 
