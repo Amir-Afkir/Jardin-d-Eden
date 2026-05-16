@@ -36,10 +36,10 @@ export default function Hero() {
           {/* Médaillon */}
           <div className="relative h-full w-full rounded-full bg-black/60 backdrop-blur-sm ring-1 ring-white/20 outline outline-1 outline-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden">
             <Image
-              src="/logo.svg"
+              src="/logo-jardin-eden.jpeg"
               alt=""
               fill
-              className="object-contain p-1"
+              className="object-cover"
               sizes="(min-width:768px) 112px, 96px"
               priority={false}
             />

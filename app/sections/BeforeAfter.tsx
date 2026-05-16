@@ -28,6 +28,7 @@ export default function BeforeAfter() {
               src={img.src}
               alt={img.label}
               fill
+              sizes="(min-width: 768px) 50vw, 100vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <span className="absolute left-3 top-3 text-xs font-medium bg-black/60 text-white px-2 py-1 rounded-lg backdrop-blur-sm">

@@ -191,7 +191,7 @@ export default function ContactCTA() {
               </li>
               <li className="flex items-center gap-2 text-cream/85">
                 <span className="inline-block h-2 w-2 rounded-full bg-gold" />
-                Devis gratuit sous 24h
+                Suivi de chantier clair
               </li>
             </ul>
 

@@ -22,29 +22,37 @@ export default function ProjectsTeaser(): JSX.Element {
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           {projects.map((p, i) => (
-            <motion.article
+            <motion.div
               key={p.slug}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
-              className="group overflow-hidden rounded-xl border border-white/10 bg-cream/5 hover:shadow-md transition-shadow"
             >
-              <div className="relative h-64">
-                <Image
-                  src={p.image}
-                  alt={p.title}
-                  fill
-                  placeholder="blur"
-                  blurDataURL={p.blurDataURL}
-                  sizes="(min-width:1280px) 33vw, 100vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="font-medium">{p.title}</h3>
-              </div>
-            </motion.article>
+              <Link
+                href={`/projets#${p.slug}`}
+                className="group block overflow-hidden rounded-xl border border-white/10 bg-cream/5 transition-all hover:border-gold/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label={`Voir le projet ${p.title}`}
+              >
+                <article>
+                  <div className="relative h-64">
+                    <Image
+                      src={p.image}
+                      alt={p.title}
+                      fill
+                      placeholder="blur"
+                      blurDataURL={p.blurDataURL}
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-medium">{p.title}</h3>
+                    <p className="mt-2 text-sm text-foreground/65 line-clamp-2">{p.description}</p>
+                  </div>
+                </article>
+              </Link>
+            </motion.div>
           ))}
         </div>
       </div>

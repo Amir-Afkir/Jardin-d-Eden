@@ -27,7 +27,7 @@ const BTN_VARIANTS: Record<ButtonVariant, string> = {
     // Active
     "active:translate-y-0 active:scale-[0.99] active:shadow-[0_3px_8px_rgba(0,0,0,0.14)]",
     // Focus
-    "focus-visible:ring-brand-500",
+    "focus-visible:ring-brand",
   ].join(" "),
   outline: [
     "border border-gold text-gold bg-transparent",
@@ -95,8 +95,13 @@ export function Button(props: ButtonProps) {
     );
   }
 
-  // Branche: <Link> — retirer notre `as` interne pour éviter collision avec Next
-  const { as: _internalAs, children, ariaLabel: _al, className: _cn, "data-analytics": _da, ...linkProps } = props as ButtonAsLinkProps;
+  // Branche: <Link> — retirer les props internes pour éviter collision avec Next
+  const linkProps = { ...(props as ButtonAsLinkProps) } as Partial<ButtonAsLinkProps>;
+  delete linkProps.as;
+  delete linkProps.children;
+  delete linkProps.ariaLabel;
+  delete linkProps.className;
+  delete linkProps["data-analytics"];
 
   return (
     <Link
@@ -105,7 +110,7 @@ export function Button(props: ButtonProps) {
       className={classes}
       data-analytics={da}
     >
-      {children}
+      {props.children}
     </Link>
   );
 }

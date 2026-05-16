@@ -54,6 +54,7 @@ const COMMON = [
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
+    qualities: [70, 75, 85],
     deviceSizes: [360, 640, 768, 1024, 1280, 1536, 1920, 2560, 3840],
     imageSizes: [256, 320, 480, 640, 800],
     remotePatterns: [

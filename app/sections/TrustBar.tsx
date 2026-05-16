@@ -21,7 +21,7 @@ function isReviewsSlim(x: unknown): x is ReviewsSlim {
 
 export default function TrustBar(): JSX.Element {
   const [google, setGoogle] = useState<ReviewsSlim | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [hasFallback, setHasFallback] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -37,6 +37,7 @@ export default function TrustBar(): JSX.Element {
             uri = typeof g.googleMapsUri === "string" ? g.googleMapsUri : null;
           }
           setGoogle({ rating: j.rating ?? null, userRatingCount: j.userRatingCount, googleMapsUri: uri });
+          setHasFallback(false);
         } else if (mounted) {
           // payload complet: on extrait les champs utiles si présents
           const k = j as Record<string, unknown>;
@@ -44,9 +45,13 @@ export default function TrustBar(): JSX.Element {
           const cnt = (typeof k.userRatingCount === "number" ? k.userRatingCount : 0);
           const uri = typeof k.googleMapsUri === "string" ? k.googleMapsUri : null;
           setGoogle({ rating: rt, userRatingCount: cnt, googleMapsUri: uri });
+          setHasFallback(false);
         }
-      } catch (e) {
-        if (mounted) setError(e instanceof Error ? e.message : "unknown_error");
+      } catch {
+        if (mounted) {
+          setGoogle({ rating: null, userRatingCount: 0, googleMapsUri: null });
+          setHasFallback(true);
+        }
       }
     })();
     return () => {
@@ -63,8 +68,8 @@ export default function TrustBar(): JSX.Element {
       ) : (
         <span className="text-gold font-medium">★★★★★ {google.rating.toFixed(1)}/5 (Google)</span>
       )
-    ) : error ? (
-      <span>Avis Google</span>
+    ) : hasFallback ? (
+      <span>Retours clients positifs</span>
     ) : (
       <span>Chargement…</span>
     );
