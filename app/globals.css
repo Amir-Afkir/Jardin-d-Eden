@@ -6,6 +6,8 @@
   /* Couleurs de base */
   --background: #0B0B0B; /* fond sombre premium */
   --foreground: #F8F5EF; /* crème lisible */
+  --surface: #151513;
+  --surface-strong: #20201d;
 
   /* Couleurs marque */
   --color-brand: #1FA15A;  /* vert marque */
@@ -40,12 +42,46 @@
 html, body {
   height: 100%;
 }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 7rem;
+}
 body {
-  background: var(--background);
+  background:
+    radial-gradient(900px 460px at 12% 0%, rgba(31, 161, 90, 0.12), transparent 58%),
+    radial-gradient(820px 420px at 88% 12%, rgba(216, 178, 110, 0.10), transparent 56%),
+    linear-gradient(180deg, #090909 0%, var(--background) 42%, #070807 100%);
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+::selection {
+  background: rgba(216, 178, 110, 0.32);
+  color: var(--color-cream);
+}
+
+#services,
+#projets,
+#process,
+#social,
+#zone,
+#contact {
+  scroll-margin-top: 7rem;
+}
+
+@media (min-width: 768px) {
+  html {
+    scroll-padding-top: 5.5rem;
+  }
+  #services,
+  #projets,
+  #process,
+  #social,
+  #zone,
+  #contact {
+    scroll-margin-top: 5.5rem;
+  }
 }
 
 /* Utilitaires légers (optionnels) pour boutons/accents si besoin en plus des classes Tailwind) */
@@ -56,6 +92,95 @@ body {
 .btn-brand:hover { background-color: var(--color-brand-600); }
 .link-gold { color: var(--color-gold); }
 .border-gold { border-color: var(--color-gold); }
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.section-shell {
+  position: relative;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  padding-block: clamp(4.5rem, 7vw, 7rem);
+}
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.section-kicker::before {
+  content: "";
+  width: 1.75rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-brand), var(--color-gold));
+}
+.section-title {
+  margin-top: 0.75rem;
+  color: var(--color-cream);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+.section-copy {
+  margin-top: 1rem;
+  max-width: 44rem;
+  color: rgba(248, 245, 239, 0.72);
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  line-height: 1.75;
+}
+.surface-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(248, 245, 239, 0.10);
+  background:
+    linear-gradient(180deg, rgba(248, 245, 239, 0.075), rgba(248, 245, 239, 0.035)),
+    radial-gradient(120% 120% at 100% 0%, rgba(31, 161, 90, 0.10), transparent 46%),
+    var(--surface);
+  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.24);
+}
+.surface-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(216, 178, 110, 0.18), transparent 34%, rgba(31, 161, 90, 0.12));
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.surface-card:hover::before,
+.surface-card:focus-within::before {
+  opacity: 1;
+}
+.root-divider {
+  position: relative;
+}
+.root-divider::after {
+  content: "";
+  position: absolute;
+  left: max(1rem, calc((100vw - 72rem) / 2));
+  right: max(1rem, calc((100vw - 72rem) / 2));
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(216, 178, 110, 0.22), rgba(31, 161, 90, 0.18), transparent);
+}
+
+@media (max-width: 767px) {
+  .section-shell {
+    padding-block: 4rem;
+  }
+  .section-title {
+    letter-spacing: -0.035em;
+  }
+}
 
 @media (prefers-reduced-motion: no-preference) {
   .animate-fade-up {
@@ -90,13 +215,56 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;              /* cache toute scroll bar éventuelle */
-  overscroll-behavior: contain;  /* évite le scroll chaîné sur la page */
-  touch-action: manipulation;    /* réduit certains gestes tactiles */
+  overflow: hidden;
+  overscroll-behavior: auto;
+  touch-action: pan-y;
 }
 .tt-frame-guard > iframe {
   border: 0;
   width: 100%;
   height: 100%;
   display: block;
+}
+.tt-frame-locked {
+  pointer-events: none;
+}
+.tt-frame-guard__activate {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: end center;
+  border: 0;
+  padding: 1rem;
+  color: var(--color-cream);
+  cursor: pointer;
+  touch-action: pan-y;
+  background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.42));
+}
+.tt-frame-guard__activate:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: -4px;
+}
+.tt-frame-guard__label {
+  border: 1px solid rgba(248, 245, 239, 0.2);
+  border-radius: 999px;
+  background: rgba(11, 11, 11, 0.72);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.55rem 0.8rem;
+}
+
+@media (hover: hover) {
+  .tt-frame-guard__label {
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+  .tt-frame-guard__activate:hover .tt-frame-guard__label,
+  .tt-frame-guard__activate:focus-visible .tt-frame-guard__label {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

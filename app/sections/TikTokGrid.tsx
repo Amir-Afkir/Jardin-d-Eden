@@ -1,31 +1,3 @@
-// app/api/tiktok/oembed/route.ts
-type OEmbedResp = {
-  html?: string;
-  error?: string;
-};
-type FetchResult =
-  | { ok: true; status: 200; body: OEmbedResp }
-  | { ok: false; status: number; body: null };
-
-async function fetchOEmbed(url: string): Promise<FetchResult> {
-  const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
-  if (!res.ok) return { ok: false as const, status: res.status, body: null };
-  const body = (await res.json()) as OEmbedResp;
-  return { ok: true as const, status: 200, body };
-}
-
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const t = url.searchParams.get("url");
-  if (!t) return new Response("Missing url param", { status: 400 });
-  const r = await fetchOEmbed(t);
-  if (!r.ok) return new Response(null, { status: r.status });
-  const data = r.body as OEmbedResp;
-  return new Response(JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
-}
-
-
-// app/sections/TikTokGrid.tsx
 "use client";
 
 import React, { memo, useEffect, useMemo, useRef, useState } from "react";
@@ -103,10 +75,22 @@ async function fetchOnce(limit: number, etag: string, signal: AbortSignal): Prom
 
 /** ---------- Embed v2 (pas d'oEmbed, pas de script) ---------- */
 const TikTokIframe = ({ id, title }: { id: string; title?: string }) => {
+  const [isInteractive, setIsInteractive] = useState(false);
   const src = `https://www.tiktok.com/embed/v2/${id}`;
+  const label = title ? `Activer la vidéo TikTok : ${title}` : "Activer la vidéo TikTok";
+
   return (
-    <div className="tt-frame-guard">
+    <div
+      className="tt-frame-guard group"
+      onMouseLeave={() => setIsInteractive(false)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setIsInteractive(false);
+        }
+      }}
+    >
       <iframe
+        className={isInteractive ? undefined : "tt-frame-locked"}
         src={src}
         title={title || "TikTok"}
         allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
@@ -114,7 +98,18 @@ const TikTokIframe = ({ id, title }: { id: string; title?: string }) => {
         loading="lazy"
         allowFullScreen
         scrolling="no"
+        tabIndex={isInteractive ? 0 : -1}
       />
+      {!isInteractive && (
+        <button
+          type="button"
+          className="tt-frame-guard__activate"
+          aria-label={label}
+          onClick={() => setIsInteractive(true)}
+        >
+          <span className="tt-frame-guard__label">Activer la vidéo</span>
+        </button>
+      )}
     </div>
   );
 };
@@ -242,7 +237,7 @@ export default function TikTokGrid({
       } catch (e) {
         if (mounted) setErr(errMsg(e));
       } finally {
-        mounted && setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
