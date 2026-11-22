@@ -31,6 +31,9 @@ const SERVICES: ReadonlyArray<{ value: string; label: string }> = [
 ];
 
 export default function ContactCTA() {
+  // Reuse the existing configured number while allowing a dedicated phone setting.
+  const contactPhone = (process.env.NEXT_PUBLIC_CONTACT_PHONE ?? process.env.NEXT_PUBLIC_WHATSAPP_E164 ?? "").trim();
+  const dialNumber = contactPhone.replace(/[^\d+]/g, "");
   const [form, setForm] = useState<FormState>({
     name: "",
     phone: "",
@@ -186,6 +189,18 @@ export default function ContactCTA() {
               </li>
             </ul>
 
+            {dialNumber && (
+              <a
+                href={`tel:${dialNumber}`}
+                className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl border border-gold/50 px-5 py-3 text-sm font-semibold text-gold transition hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                aria-label={`Appeler Le Jardin d’Eden au ${contactPhone}`}
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-5 w-5">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.35 1.91.68 2.81a2 2 0 0 1-.45 2.11L8.07 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.33 1.85.56 2.81.68A2 2 0 0 1 22 16.92Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Appeler directement : {contactPhone}
+              </a>
+            )}
           </div>
 
           {/* Colonne droite : carte glassmorphism */}
