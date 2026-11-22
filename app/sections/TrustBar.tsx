@@ -78,7 +78,7 @@ export default function TrustBar(): JSX.Element {
     googleText,
     <span key="projects">120+ projets livrés</span>,
     <span key="eco">Éco-responsable</span>,
-    <span key="quote">Devis gratuit sous 24h</span>,
+    <span key="quote">Devis gratuit</span>,
   ];
 
   return (
