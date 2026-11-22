@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Button } from "../components/ui/Button";
 
 type FormState = {
@@ -31,9 +31,6 @@ const SERVICES: ReadonlyArray<{ value: string; label: string }> = [
 ];
 
 export default function ContactCTA() {
-  const phoneE164: string | undefined = process.env.NEXT_PUBLIC_WHATSAPP_E164;
-  const hasPhone = Boolean(phoneE164 && phoneE164.length > 0);
-
   const [form, setForm] = useState<FormState>({
     name: "",
     phone: "",
@@ -45,12 +42,6 @@ export default function ContactCTA() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [serverMsg, setServerMsg] = useState<string>("");
   const abortRef = useRef<AbortController | null>(null);
-
-  const defaultMsg = "Bonjour, je souhaite un devis pour l'aménagement de mon jardin.";
-  const waUrl = useMemo(() => {
-    if (!hasPhone) return undefined;
-    return `https://wa.me/${phoneE164}?text=${encodeURIComponent(defaultMsg)}`;
-  }, [hasPhone, phoneE164]);
 
   function validatePhoneFR(v: string): boolean {
     // 06XXXXXXXX | 07XXXXXXXX, etc. espaces/points/tirets autorisés
@@ -172,18 +163,18 @@ export default function ContactCTA() {
               Votre projet mérite l’<span className="text-gold">excellence</span>
             </h2>
             <p className="mt-4 text-cream/85 leading-relaxed max-w-prose">
-              Remplissez le formulaire. Un expert vous recontacte
-              sous 24h pour un devis précis et des conseils personnalisés.
+              Remplissez le formulaire pour demander un devis gratuit et recevoir
+              des conseils personnalisés pour votre projet.
             </p>
 
             <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <li className="flex items-center gap-2 text-cream/85">
                 <span className="inline-block h-2 w-2 rounded-full bg-gold" />
-                Devis gratuit &amp; rapide
+                Devis gratuit
               </li>
               <li className="flex items-center gap-2 text-cream/85">
                 <span className="inline-block h-2 w-2 rounded-full bg-gold" />
-                Réponse sous 24h ouvrées
+                Étude personnalisée de votre projet
               </li>
               <li className="flex items-center gap-2 text-cream/85">
                 <span className="inline-block h-2 w-2 rounded-full bg-gold" />
@@ -195,19 +186,6 @@ export default function ContactCTA() {
               </li>
             </ul>
 
-            {waUrl && (
-              <p className="mt-6 text-sm text-cream/85">
-                Ou échangeons sur WhatsApp :{" "}
-                <a
-                  href={waUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-4 hover:text-gold transition-colors"
-                >
-                  ouvrir la conversation
-                </a>
-              </p>
-            )}
           </div>
 
           {/* Colonne droite : carte glassmorphism */}
