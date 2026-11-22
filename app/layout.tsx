@@ -5,7 +5,6 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 
 const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://jardindeden45.fr");
-const phoneE164 = process.env.NEXT_PUBLIC_WHATSAPP_E164;
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
@@ -60,7 +59,6 @@ const localBusinessJsonLd = {
   logo: new URL("/logo-jardin-eden.jpeg", siteUrl).toString(),
   description:
     "Création, aménagement et entretien paysager à Orléans et alentours.",
-  ...(phoneE164 ? { telephone: phoneE164 } : {}),
   address: {
     "@type": "PostalAddress",
     addressLocality: "Orléans",
